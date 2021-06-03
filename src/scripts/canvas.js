@@ -6,15 +6,13 @@ class BaseCanvasEngine extends Engine {
     super();
     this.ctx = this.canvas.getContext("2d");
     this.content.appendChild(this.canvas);
-    this.canvasWidth = this.canvas.width;
-    this.canvasHeight = this.canvas.height;
   }
 
   animate() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.clearRect(0, 0, this.width, this.height);
 
-    const scaleX = scale(this.currentXRange, [0, this.canvas.width]);
-    const scaleY = scale(this.currentYRange, [0, this.canvas.height]);
+    const scaleX = scale(this.currentXRange, [0, this.width]);
+    const scaleY = scale(this.currentYRange, [0, this.height]);
 
     const currBoxWidth =
       ((this.maxX - this.minX) /
@@ -26,6 +24,7 @@ class BaseCanvasEngine extends Engine {
         (this.currentYRange[1] - this.currentYRange[0])) *
       this.trueBoxHeight;
 
+    // Calculate where grid starts so we draw rectangles that are partially offscreen
     const gridStartX =
       this.currentXRange[0] -
       (this.currentXRange[0] % this.trueBoxWidth) -
@@ -44,6 +43,7 @@ class BaseCanvasEngine extends Engine {
       (this.currentYRange[1] % this.trueBoxHeight) +
       this.trueBoxWidth;
 
+    // Only draw rectangles inside viewing window
     for (let currX = gridStartX; currX < gridEndX; currX += this.trueBoxWidth) {
       for (
         let currY = gridStartY;

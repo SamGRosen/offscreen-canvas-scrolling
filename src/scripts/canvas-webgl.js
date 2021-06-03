@@ -73,6 +73,7 @@ class WebGLCanvasEngine extends Engine {
     );
 
     const viewport = this.getWebGLViewport();
+
     this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
@@ -115,28 +116,27 @@ class WebGLCanvasEngine extends Engine {
     for (let x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
       for (let y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
         positions.push(
-          scaleX(x - 2 + 5 * Math.random()),
-          scaleY(y - 2 + 5 * Math.random()),
-          scaleX(x + this.trueBoxWidth - 2 + 5 * Math.random()),
-          scaleY(y - 2 + 5 * Math.random()),
-          scaleX(x + this.trueBoxWidth - 2 + 5 * Math.random()),
-          scaleY(y + this.trueBoxHeight - 2 + 5 * Math.random())
+          scaleX(x),
+          scaleY(y),
+          scaleX(x + this.trueBoxWidth),
+          scaleY(y),
+          scaleX(x + this.trueBoxWidth),
+          scaleY(y + this.trueBoxHeight)
         );
 
         positions.push(
-          scaleX(x - 2 + 5 * Math.random()),
-          scaleY(y - 2 + 5 * Math.random()),
-          scaleX(x - 2 + 5 * Math.random()),
-          scaleY(y + this.trueBoxHeight - 2 + 5 * Math.random()),
-          scaleX(x + this.trueBoxWidth - 2 + 5 * Math.random()),
-          scaleY(y + this.trueBoxHeight - 2 + 5 * Math.random())
+          scaleX(x),
+          scaleY(y),
+          scaleX(x),
+          scaleY(y + this.trueBoxHeight),
+          scaleX(x + this.trueBoxWidth),
+          scaleY(y + this.trueBoxHeight)
         );
       }
     }
 
     this.vertexCount = positions.length / 2;
 
-    console.log(positions);
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
       new Float32Array(positions),
@@ -150,6 +150,7 @@ class WebGLCanvasEngine extends Engine {
   }
 
   getWebGLViewport() {
+    // Calculate appropriate webgl viewport given current selection window
     const scaleXWindowSpace = scale([this.minX, this.maxX], [0, -this.width]);
     const scaleYWindowSpace = scale([this.minY, this.maxY], [0, -this.height]);
 

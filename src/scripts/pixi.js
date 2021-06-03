@@ -1,6 +1,5 @@
 import Engine from "./engine";
 import { rgbToHex, scale } from "./utilities";
-import { Viewport } from "pixi-viewport";
 
 import * as PIXI from "pixi.js";
 
@@ -14,10 +13,42 @@ class PixiEngine extends Engine {
       backgroundColor: 0xffffff,
       antialias: true,
     });
-    this.content.appendChild(this.app.view);
+
+    this.canvas = this.app.view;
+    this.content.appendChild(this.canvas);
+    this.initControls();
   }
 
   animate() {
+    const scaleX = scale(this.currentXRange, [0, this.width]);
+    const scaleYWindowSpace = scale([this.minY, this.maxY], [0, this.height]);
+
+    const toReturnY = scaleYWindowSpace(this.currentYRange[1]);
+
+    const windowWidth = this.currentXRange[1] - this.currentXRange[0];
+    const windowHeight = this.currentYRange[1] - this.currentYRange[0];
+
+    const currBoxWidth =
+      ((this.maxX - this.minX) /
+        (this.currentXRange[1] - this.currentXRange[0])) *
+      this.trueBoxWidth;
+
+    for (let column of this.columns) {
+      let columnX = scaleX(column.x);
+      column.element.visible = columnX + currBoxWidth > 0;
+
+      if (column.element.visible) {
+        // Shift entire column as rectangles are shifted appropriate amount with in column
+        column.element.position.set(columnX, toReturnY / 2);
+
+        // Rescale shapes on screen
+        column.element.transform.scale.set(
+          this.canvas.width / windowWidth,
+          this.canvas.height / windowHeight
+        );
+        column.element.updateTransform();
+      }
+    }
     this.meter.tick();
   }
 
@@ -30,19 +61,12 @@ class PixiEngine extends Engine {
     this.app.ticker.remove(this.animate, this);
     this.app.stage.removeChildren();
 
-    this.viewport = new Viewport({
-      screenWidth: this.width,
-      screenHeight: this.height,
-      worldWidth: this.maxX - this.minX,
-      worldHeight: this.maxY - this.minY,
-
-      interaction: this.app.renderer.plugins.interaction, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
-    });
-
-    this.app.stage.addChild(this.viewport);
-    this.viewport.drag().pinch().wheel().decelerate();
-
+    this.columns = [];
     for (let x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
+      let currentColumn = new PIXI.Container();
+      this.columns.push({ x, element: currentColumn });
+      this.app.stage.addChild(currentColumn);
+
       for (let y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
         const rect = new PIXI.Graphics();
         rect.beginFill(
@@ -53,22 +77,17 @@ class PixiEngine extends Engine {
           )
         );
 
-        rect.drawRect(
-          -this.trueBoxWidth / 2,
-          -this.trueBoxHeight / 2,
-          this.trueBoxWidth,
-          this.trueBoxHeight
-        );
+        // Draw rects at true world size, scale to window in animate function
+        rect.drawRect(0, 0, this.trueBoxWidth, this.trueBoxHeight);
         rect.endFill();
 
-        rect.position.set(x + 10 * Math.random(), y + 10 * Math.random());
-        this.viewport.addChild(rect);
+        // Set x position to 0 as columns will be assigned an x position
+        rect.position.set(0, y);
+        currentColumn.addChild(rect);
       }
     }
 
     this.app.ticker.add(this.animate, this);
-
-    this.animate();
   }
 }
 
