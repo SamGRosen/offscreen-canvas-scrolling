@@ -1,0 +1,20 @@
+{
+  "name": "offscreen-canvas-scrolling",
+  "version": "1.0.0",
+  "main": "src/pages/index.html",
+  "repository": "https://github.com/SamGRosen/offscreen-canvas-scrolling.git",
+  "author": "Sam Rosen",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel serve src/pages/index.html --open",
+    "build": "parcel build src/pages/index.html",
+    "deploy": "yarn build && yarn copy",
+    "copy": "source .env && rsync -qazP $DEPLOY_FILES $DEPLOY_TARGET"
+  },
+  "dependencies": {
+    "fpsmeter": "0.3.1",
+    "parcel-bundler": "1.12.3",
+    "pixi.js": "5.2.3",
+    "pixi-viewport": "4.31.0"
+  }
+}
