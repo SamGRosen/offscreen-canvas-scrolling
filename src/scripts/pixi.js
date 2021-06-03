@@ -20,6 +20,11 @@ class PixiEngine extends Engine {
   }
 
   animate() {
+    if (!this.needsAnimation) {
+      this.meter.tick();
+      return;
+    }
+
     const scaleX = scale(this.currentXRange, [0, this.width]);
     const scaleYWindowSpace = scale([this.minY, this.maxY], [0, this.height]);
 
@@ -49,6 +54,7 @@ class PixiEngine extends Engine {
         column.element.updateTransform();
       }
     }
+    this.needsAnimation = false;
     this.meter.tick();
   }
 
@@ -86,7 +92,7 @@ class PixiEngine extends Engine {
         currentColumn.addChild(rect);
       }
     }
-
+    this.needsAnimation = true;
     this.app.ticker.add(this.animate, this);
   }
 }

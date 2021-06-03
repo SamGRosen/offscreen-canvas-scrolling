@@ -24,6 +24,7 @@ class Engine {
     this.currentXRange = [-100, 100];
     this.currentYRange = [-100, 100];
 
+    this.needsAnimation = true;
     this.initFpsmeter();
     this.initSettings();
     this.initControls();
@@ -113,6 +114,7 @@ class Engine {
           }
         }
 
+        this.needsAnimation = true;
         this.updateSelectionWindowDisplay();
         return false;
       },
@@ -159,6 +161,7 @@ class Engine {
           }
         }
 
+        this.needsAnimation = true;
         this.updateSelectionWindowDisplay();
       },
       false

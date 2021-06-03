@@ -39,6 +39,12 @@ class WebGLCanvasEngine extends Engine {
   }
 
   animate() {
+    if (!this.needsAnimation) {
+      this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+      this.meter.tick();
+      return;
+    }
+
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
@@ -76,6 +82,7 @@ class WebGLCanvasEngine extends Engine {
 
     this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
+    this.needsAnimation = false;
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
     this.meter.tick();
   }
@@ -146,6 +153,7 @@ class WebGLCanvasEngine extends Engine {
     if (this.lastFrame) {
       cancelAnimationFrame(this.lastFrame);
     }
+    this.needsAnimation = true;
     this.animate();
   }
 

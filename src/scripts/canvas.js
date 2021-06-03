@@ -9,6 +9,12 @@ class BaseCanvasEngine extends Engine {
   }
 
   animate() {
+    if (!this.needsAnimation) {
+      this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+      this.meter.tick();
+      return;
+    }
+
     this.ctx.clearRect(0, 0, this.width, this.height);
 
     const scaleX = scale(this.currentXRange, [0, this.width]);
@@ -63,6 +69,7 @@ class BaseCanvasEngine extends Engine {
       }
     }
 
+    this.needsAnimation = false;
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
     this.meter.tick();
   }
@@ -77,6 +84,7 @@ class BaseCanvasEngine extends Engine {
       // Avoid overlapping animation requests
       cancelAnimationFrame(this.lastFrame);
     }
+    this.needsAnimation = true;
     this.animate();
   }
 }
