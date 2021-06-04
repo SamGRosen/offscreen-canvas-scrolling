@@ -246,8 +246,6 @@ function () {
       var _this = this;
 
       return function (e) {
-        console.log(e);
-
         switch (e.data.type) {
           case "init":
             self.engine = new _this(e.data);
@@ -405,7 +403,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57909" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64543" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

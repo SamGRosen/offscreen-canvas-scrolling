@@ -51882,9 +51882,9 @@ function (_Engine) {
       width: _this.width,
       height: _this.height,
       backgroundColor: 0xffffff,
-      antialias: true
+      antialias: true,
+      view: _this.canvas
     });
-    _this.canvas = _this.app.view;
     _this.mouseReader = _this.canvas;
 
     _this.initControls();
@@ -51896,7 +51896,6 @@ function (_Engine) {
     key: "animate",
     value: function animate() {
       if (!this.needsAnimation) {
-        console.log("no anim");
         this.meter.tick();
         return;
       }
@@ -52006,7 +52005,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57909" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64543" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
