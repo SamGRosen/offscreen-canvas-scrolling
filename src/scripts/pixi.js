@@ -15,12 +15,13 @@ class PixiEngine extends Engine {
     });
 
     this.canvas = this.app.view;
-    this.content.appendChild(this.canvas);
+    this.mouseReader = this.canvas;
     this.initControls();
   }
 
   animate() {
     if (!this.needsAnimation) {
+      console.log("no anim");
       this.meter.tick();
       return;
     }
@@ -99,5 +100,7 @@ class PixiEngine extends Engine {
 
 document.addEventListener("DOMContentLoaded", () => {
   const engine = new PixiEngine();
+  engine.addToDOM();
+
   engine.render();
 });

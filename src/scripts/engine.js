@@ -12,8 +12,7 @@ class Engine {
     this.canvas.width = this.width;
     this.canvas.height = this.height;
 
-    this.count = 0;
-
+    this.mouseReader = this.canvas;
     this.controls = { lockedX: false, lockedY: false };
 
     this.minX = -2000;
@@ -28,6 +27,10 @@ class Engine {
     this.initFpsmeter();
     this.initSettings();
     this.initControls();
+  }
+
+  addToDOM() {
+    this.content.appendChild(this.canvas);
   }
 
   initFpsmeter() {
@@ -74,18 +77,16 @@ class Engine {
     document.querySelector("#lock-x").addEventListener("change", (event) => {
       this.controls.lockedX = event.target.checked;
       localStorage.setItem("controls", JSON.stringify(this.controls));
-      console.log(this.controls);
     });
 
     document.querySelector("#lock-y").addEventListener("change", (event) => {
       this.controls.lockedY = event.target.checked;
       localStorage.setItem("controls", JSON.stringify(this.controls));
-      console.log(this.controls);
     });
   }
 
   initControls() {
-    this.canvas.addEventListener(
+    this.mouseReader.addEventListener(
       "wheel",
       (event) => {
         if (!this.controls.lockedX) {
@@ -121,19 +122,19 @@ class Engine {
       false
     );
 
-    let isMoving = false;
-    this.canvas.addEventListener(
+    this.isMoving = false;
+    this.mouseReader.addEventListener(
       "mousedown",
       (event) => {
-        isMoving = true;
+        this.isMoving = true;
       },
       false
     );
 
-    this.canvas.addEventListener(
+    this.mouseReader.addEventListener(
       "mousemove",
       (event) => {
-        if (!isMoving) {
+        if (!this.isMoving) {
           return false;
         }
 
@@ -167,11 +168,11 @@ class Engine {
       false
     );
 
-    this.canvas.addEventListener("mouseup", (event) => {
-      isMoving = false;
+    this.mouseReader.addEventListener("mouseup", (event) => {
+      this.isMoving = false;
     });
-    this.canvas.addEventListener("mouseleave", (event) => {
-      isMoving = false;
+    this.mouseReader.addEventListener("mouseleave", (event) => {
+      this.isMoving = false;
     });
   }
 

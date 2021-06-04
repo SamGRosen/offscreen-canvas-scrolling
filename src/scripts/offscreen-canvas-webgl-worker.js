@@ -1,14 +1,10 @@
-import Engine from "./engine";
 import { scale, initShaderProgram } from "./utilities";
+import OffscreenWorker from "./offscreen-worker";
 import { vertexShader, fragmentShader } from "./webgl.js";
 
-// Largely taken from
-// https://github.com/mdn/webgl-examples/blob/gh-pages/tutorial/sample2/webgl-demo.js
-
-class WebGLCanvasEngine extends Engine {
-  constructor() {
-    super();
-
+class OffscreenCanvasWebGLWorker extends OffscreenWorker {
+  constructor(data) {
+    super(data);
     this.gl = this.canvas.getContext("webgl");
 
     if (!this.gl) {
@@ -20,7 +16,7 @@ class WebGLCanvasEngine extends Engine {
   animate() {
     if (!this.needsAnimation) {
       this.lastFrame = requestAnimationFrame(this.animate.bind(this));
-      this.meter.tick();
+      this.tick();
       return;
     }
 
@@ -44,7 +40,7 @@ class WebGLCanvasEngine extends Engine {
 
     this.gl.uniform1f(
       this.programInfo.uniformLocations.gridSize,
-      Math.sqrt(this.count.value) / 2
+      Math.sqrt(this.count) / 2
     );
     this.gl.uniform4fv(
       this.programInfo.uniformLocations.viewport,
@@ -63,12 +59,12 @@ class WebGLCanvasEngine extends Engine {
 
     this.needsAnimation = false;
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
-    this.meter.tick();
+    this.tick();
   }
 
   render() {
-    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
-    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
+    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
 
     this.shaderProgram = initShaderProgram(
       this.gl,
@@ -126,6 +122,7 @@ class WebGLCanvasEngine extends Engine {
     );
 
     if (this.lastFrame) {
+      // Avoid overlapping animation requests
       cancelAnimationFrame(this.lastFrame);
     }
     this.needsAnimation = true;
@@ -152,11 +149,4 @@ class WebGLCanvasEngine extends Engine {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const engine = new WebGLCanvasEngine();
-  engine.addToDOM();
-
-  engine.render();
-});
-
-export { vertexShader, fragmentShader };
+self.onmessage = OffscreenCanvasWebGLWorker.onmessager(self);

@@ -1,16 +1,17 @@
-import Engine from "./engine";
 import { scale } from "./utilities";
+import OffscreenWorker from "./offscreen-worker";
 
-class BaseCanvasEngine extends Engine {
-  constructor() {
-    super();
+console.log(10);
+class OffscreenCanvasWorker extends OffscreenWorker {
+  constructor(data) {
+    super(data);
     this.ctx = this.canvas.getContext("2d");
   }
 
   animate() {
     if (!this.needsAnimation) {
       this.lastFrame = requestAnimationFrame(this.animate.bind(this));
-      this.meter.tick();
+      this.tick();
       return;
     }
 
@@ -28,7 +29,6 @@ class BaseCanvasEngine extends Engine {
       ((this.maxY - this.minY) /
         (this.currentYRange[1] - this.currentYRange[0])) *
       this.trueBoxHeight;
-
     // Calculate where grid starts so we draw rectangles that are partially offscreen
     const gridStartX =
       this.currentXRange[0] -
@@ -69,13 +69,13 @@ class BaseCanvasEngine extends Engine {
     }
 
     this.needsAnimation = false;
+    this.tick();
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
-    this.meter.tick();
   }
 
   render() {
-    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
-    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
+    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
     this.scaleBlue = scale([this.minX, this.maxX], [0, 256]);
     this.scaleRed = scale([this.minY, this.maxY], [0, 256]);
 
@@ -88,9 +88,4 @@ class BaseCanvasEngine extends Engine {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const engine = new BaseCanvasEngine();
-  engine.addToDOM();
-
-  engine.render();
-});
+self.onmessage = OffscreenCanvasWorker.onmessager(self);
