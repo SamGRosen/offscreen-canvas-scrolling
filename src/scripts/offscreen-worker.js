@@ -29,7 +29,6 @@ class OffscreenWorker {
 
   static onmessager(self) {
     return (e) => {
-      console.log(e);
       switch (e.data.type) {
         case "init":
           self.engine = new this(e.data);

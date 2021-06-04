@@ -12,16 +12,15 @@ class PixiEngine extends Engine {
       height: this.height,
       backgroundColor: 0xffffff,
       antialias: true,
+      view: this.canvas,
     });
 
-    this.canvas = this.app.view;
     this.mouseReader = this.canvas;
     this.initControls();
   }
 
   animate() {
     if (!this.needsAnimation) {
-      console.log("no anim");
       this.meter.tick();
       return;
     }
