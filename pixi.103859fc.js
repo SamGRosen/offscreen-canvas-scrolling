@@ -1041,7 +1041,7 @@ function () {
     this.height = this.content.clientHeight * 0.75;
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.count = 0;
+    this.mouseReader = this.canvas;
     this.controls = {
       lockedX: false,
       lockedY: false
@@ -1052,12 +1052,18 @@ function () {
     this.maxY = 2000;
     this.currentXRange = [-100, 100];
     this.currentYRange = [-100, 100];
+    this.needsAnimation = true;
     this.initFpsmeter();
     this.initSettings();
     this.initControls();
   }
 
   _createClass(Engine, [{
+    key: "addToDOM",
+    value: function addToDOM() {
+      this.content.appendChild(this.canvas);
+    }
+  }, {
     key: "initFpsmeter",
     value: function initFpsmeter() {
       this.meter = new window.FPSMeter(this.content, {
@@ -1113,12 +1119,10 @@ function () {
       document.querySelector("#lock-x").addEventListener("change", function (event) {
         _this.controls.lockedX = event.target.checked;
         localStorage.setItem("controls", JSON.stringify(_this.controls));
-        console.log(_this.controls);
       });
       document.querySelector("#lock-y").addEventListener("change", function (event) {
         _this.controls.lockedY = event.target.checked;
         localStorage.setItem("controls", JSON.stringify(_this.controls));
-        console.log(_this.controls);
       });
     }
   }, {
@@ -1126,7 +1130,7 @@ function () {
     value: function initControls() {
       var _this2 = this;
 
-      this.canvas.addEventListener("wheel", function (event) {
+      this.mouseReader.addEventListener("wheel", function (event) {
         if (!_this2.controls.lockedX) {
           var previousX = _toConsumableArray(_this2.currentXRange);
 
@@ -1155,16 +1159,18 @@ function () {
           }
         }
 
+        _this2.needsAnimation = true;
+
         _this2.updateSelectionWindowDisplay();
 
         return false;
       }, false);
-      var isMoving = false;
-      this.canvas.addEventListener("mousedown", function (event) {
-        isMoving = true;
+      this.isMoving = false;
+      this.mouseReader.addEventListener("mousedown", function (event) {
+        _this2.isMoving = true;
       }, false);
-      this.canvas.addEventListener("mousemove", function (event) {
-        if (!isMoving) {
+      this.mouseReader.addEventListener("mousemove", function (event) {
+        if (!_this2.isMoving) {
           return false;
         }
 
@@ -1194,13 +1200,15 @@ function () {
           }
         }
 
+        _this2.needsAnimation = true;
+
         _this2.updateSelectionWindowDisplay();
       }, false);
-      this.canvas.addEventListener("mouseup", function (event) {
-        isMoving = false;
+      this.mouseReader.addEventListener("mouseup", function (event) {
+        _this2.isMoving = false;
       });
-      this.canvas.addEventListener("mouseleave", function (event) {
-        isMoving = false;
+      this.mouseReader.addEventListener("mouseleave", function (event) {
+        _this2.isMoving = false;
       });
     }
   }, {
@@ -51877,8 +51885,7 @@ function (_Engine) {
       antialias: true
     });
     _this.canvas = _this.app.view;
-
-    _this.content.appendChild(_this.canvas);
+    _this.mouseReader = _this.canvas;
 
     _this.initControls();
 
@@ -51888,6 +51895,12 @@ function (_Engine) {
   _createClass(PixiEngine, [{
     key: "animate",
     value: function animate() {
+      if (!this.needsAnimation) {
+        console.log("no anim");
+        this.meter.tick();
+        return;
+      }
+
       var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
       var scaleYWindowSpace = (0, _utilities.scale)([this.minY, this.maxY], [0, this.height]);
       var toReturnY = scaleYWindowSpace(this.currentYRange[1]);
@@ -51918,6 +51931,7 @@ function (_Engine) {
         _iterator.f();
       }
 
+      this.needsAnimation = false;
       this.meter.tick();
     }
   }, {
@@ -51951,6 +51965,7 @@ function (_Engine) {
         }
       }
 
+      this.needsAnimation = true;
       this.app.ticker.add(this.animate, this);
     }
   }]);
@@ -51960,6 +51975,7 @@ function (_Engine) {
 
 document.addEventListener("DOMContentLoaded", function () {
   var engine = new PixiEngine();
+  engine.addToDOM();
   engine.render();
 });
 },{"./engine":"../scripts/engine.js","./utilities":"../scripts/utilities.js","pixi.js":"../../node_modules/pixi.js/dist/esm/pixi.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
@@ -51990,7 +52006,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55366" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57909" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

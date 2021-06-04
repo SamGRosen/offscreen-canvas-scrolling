@@ -1041,7 +1041,7 @@ function () {
     this.height = this.content.clientHeight * 0.75;
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.count = 0;
+    this.mouseReader = this.canvas;
     this.controls = {
       lockedX: false,
       lockedY: false
@@ -1052,12 +1052,18 @@ function () {
     this.maxY = 2000;
     this.currentXRange = [-100, 100];
     this.currentYRange = [-100, 100];
+    this.needsAnimation = true;
     this.initFpsmeter();
     this.initSettings();
     this.initControls();
   }
 
   _createClass(Engine, [{
+    key: "addToDOM",
+    value: function addToDOM() {
+      this.content.appendChild(this.canvas);
+    }
+  }, {
     key: "initFpsmeter",
     value: function initFpsmeter() {
       this.meter = new window.FPSMeter(this.content, {
@@ -1113,12 +1119,10 @@ function () {
       document.querySelector("#lock-x").addEventListener("change", function (event) {
         _this.controls.lockedX = event.target.checked;
         localStorage.setItem("controls", JSON.stringify(_this.controls));
-        console.log(_this.controls);
       });
       document.querySelector("#lock-y").addEventListener("change", function (event) {
         _this.controls.lockedY = event.target.checked;
         localStorage.setItem("controls", JSON.stringify(_this.controls));
-        console.log(_this.controls);
       });
     }
   }, {
@@ -1126,7 +1130,7 @@ function () {
     value: function initControls() {
       var _this2 = this;
 
-      this.canvas.addEventListener("wheel", function (event) {
+      this.mouseReader.addEventListener("wheel", function (event) {
         if (!_this2.controls.lockedX) {
           var previousX = _toConsumableArray(_this2.currentXRange);
 
@@ -1155,16 +1159,18 @@ function () {
           }
         }
 
+        _this2.needsAnimation = true;
+
         _this2.updateSelectionWindowDisplay();
 
         return false;
       }, false);
-      var isMoving = false;
-      this.canvas.addEventListener("mousedown", function (event) {
-        isMoving = true;
+      this.isMoving = false;
+      this.mouseReader.addEventListener("mousedown", function (event) {
+        _this2.isMoving = true;
       }, false);
-      this.canvas.addEventListener("mousemove", function (event) {
-        if (!isMoving) {
+      this.mouseReader.addEventListener("mousemove", function (event) {
+        if (!_this2.isMoving) {
           return false;
         }
 
@@ -1194,13 +1200,15 @@ function () {
           }
         }
 
+        _this2.needsAnimation = true;
+
         _this2.updateSelectionWindowDisplay();
       }, false);
-      this.canvas.addEventListener("mouseup", function (event) {
-        isMoving = false;
+      this.mouseReader.addEventListener("mouseup", function (event) {
+        _this2.isMoving = false;
       });
-      this.canvas.addEventListener("mouseleave", function (event) {
-        isMoving = false;
+      this.mouseReader.addEventListener("mouseleave", function (event) {
+        _this2.isMoving = false;
       });
     }
   }, {
@@ -1278,12 +1286,41 @@ function componentToHex(c) {
 function rgbToHex(r, g, b) {
   return parseInt(Number("0x" + componentToHex(r) + componentToHex(g) + componentToHex(b)), 10);
 }
+},{}],"../scripts/webgl.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fragmentShader = exports.vertexShader = void 0;
+var vertexShader = "\n  attribute vec4 aVertexPosition;\n\n  void main() {\n      gl_Position = aVertexPosition;\n  }\n";
+exports.vertexShader = vertexShader;
+var fragmentShader = "\n  precision mediump float;\n  uniform float uGridSize;\n  uniform vec4 viewport;\n  void main() {\n    vec4 ndcPos;\n    // Reverse calculations from window space to clip space (normalized device coordinates)\n    ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;\n    ndcPos.xy = ndcPos.xy - mod(ndcPos.xy, 1.0 / uGridSize);\n    gl_FragColor = vec4(ndcPos.x/2.0 + 0.5 , 0, ndcPos.y/2.0 + 0.5, 1.0);\n  }\n";
+exports.fragmentShader = fragmentShader;
 },{}],"../scripts/canvas-webgl.js":[function(require,module,exports) {
 "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "vertexShader", {
+  enumerable: true,
+  get: function () {
+    return _webgl.vertexShader;
+  }
+});
+Object.defineProperty(exports, "fragmentShader", {
+  enumerable: true,
+  get: function () {
+    return _webgl.fragmentShader;
+  }
+});
 
 var _engine = _interopRequireDefault(require("./engine"));
 
 var _utilities = require("./utilities");
+
+var _webgl = require("./webgl.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1311,9 +1348,6 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 // Largely taken from
 // https://github.com/mdn/webgl-examples/blob/gh-pages/tutorial/sample2/webgl-demo.js
-var vertexShader = "\n  attribute vec4 aVertexPosition;\n\n  void main() {\n      gl_Position = aVertexPosition;\n  }\n";
-var fragmentShader = "\n  precision mediump float;\n  uniform float uGridSize;\n  uniform vec4 viewport;\n  void main() {\n    vec4 ndcPos;\n    // Reverse calculations from window space to clip space (normalized device coordinates)\n    ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;\n    ndcPos.xy = ndcPos.xy - mod(ndcPos.xy, 1.0 / uGridSize);\n    gl_FragColor = vec4(ndcPos.x/2.0 + 0.5 , 0, ndcPos.y/2.0 + 0.5, 1.0);\n  }\n";
-
 var WebGLCanvasEngine =
 /*#__PURE__*/
 function (_Engine) {
@@ -1334,14 +1368,18 @@ function (_Engine) {
       return _possibleConstructorReturn(_this);
     }
 
-    _this.content.appendChild(_this.canvas);
-
     return _this;
   }
 
   _createClass(WebGLCanvasEngine, [{
     key: "animate",
     value: function animate() {
+      if (!this.needsAnimation) {
+        this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+        this.meter.tick();
+        return;
+      }
+
       this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
@@ -1360,6 +1398,7 @@ function (_Engine) {
       );
       var viewport = this.getWebGLViewport();
       this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+      this.needsAnimation = false;
       this.lastFrame = requestAnimationFrame(this.animate.bind(this));
       this.meter.tick();
     }
@@ -1368,10 +1407,7 @@ function (_Engine) {
     value: function render() {
       this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
       this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
-      this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
-      this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
-      this.baseViewport = this.gl.getParameter(this.gl.VIEWPORT);
-      this.shaderProgram = (0, _utilities.initShaderProgram)(this.gl, vertexShader, fragmentShader);
+      this.shaderProgram = (0, _utilities.initShaderProgram)(this.gl, _webgl.vertexShader, _webgl.fragmentShader);
       this.programInfo = {
         program: this.shaderProgram,
         attribLocations: {
@@ -1402,6 +1438,7 @@ function (_Engine) {
         cancelAnimationFrame(this.lastFrame);
       }
 
+      this.needsAnimation = true;
       this.animate();
     }
   }, {
@@ -1423,9 +1460,10 @@ function (_Engine) {
 
 document.addEventListener("DOMContentLoaded", function () {
   var engine = new WebGLCanvasEngine();
+  engine.addToDOM();
   engine.render();
 });
-},{"./engine":"../scripts/engine.js","./utilities":"../scripts/utilities.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./engine":"../scripts/engine.js","./utilities":"../scripts/utilities.js","./webgl.js":"../scripts/webgl.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -1453,7 +1491,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55366" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57909" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
