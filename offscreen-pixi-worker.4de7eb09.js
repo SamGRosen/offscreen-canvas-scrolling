@@ -117,7 +117,74 @@ parcelRequire = (function (modules, cache, entry, globalName) {
   }
 
   return newRequire;
-})({"../scripts/utilities.js":[function(require,module,exports) {
+})({"../scripts/Drawer.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var Drawer =
+/*#__PURE__*/
+function () {
+  function Drawer(data) {
+    _classCallCheck(this, Drawer);
+
+    this.canvas = data.canvas;
+    this.width = data.canvas.width;
+    this.height = data.canvas.height;
+    this.receiveState(data);
+  }
+
+  _createClass(Drawer, [{
+    key: "receiveState",
+    value: function receiveState(data) {
+      this.minX = data.minX;
+      this.maxX = data.maxX;
+      this.minY = data.minY;
+      this.maxY = data.maxY;
+      this.currentXRange = _toConsumableArray(data.currentXRange);
+      this.currentYRange = _toConsumableArray(data.currentYRange);
+      this.count = data.count;
+      this.controls = data.controls;
+      this.needsAnimation = true;
+    }
+  }, {
+    key: "tick",
+    value: function tick() {}
+  }, {
+    key: "animate",
+    value: function animate() {}
+  }, {
+    key: "render",
+    value: function render() {}
+  }]);
+
+  return Drawer;
+}();
+
+var _default = Drawer;
+exports.default = _default;
+},{}],"../scripts/utilities.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -127,6 +194,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
+exports.createMessanger = void 0;
 
 function scale(domain, range) {
   var domainLength = domain[1] - domain[0];
@@ -176,7 +244,31 @@ function componentToHex(c) {
 function rgbToHex(r, g, b) {
   return parseInt(Number("0x" + componentToHex(r) + componentToHex(g) + componentToHex(b)), 10);
 }
-},{}],"../scripts/offscreen-worker.js":[function(require,module,exports) {
+
+var createMessanger = function createMessanger(clazz, self) {
+  return function (e) {
+    switch (e.data.type) {
+      case "init":
+        self.drawer = new clazz(e.data);
+        break;
+
+      case "state":
+        self.drawer.receiveState(e.data);
+        break;
+
+      case "render":
+        self.drawer.receiveState(e.data);
+        self.drawer.render();
+        break;
+
+      default:
+        console.error("Received unknown message type: ".concat(e));
+    }
+  };
+};
+
+exports.createMessanger = createMessanger;
+},{}],"../scripts/stub-pixi-drawer.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -184,15 +276,17 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+var _Drawer2 = _interopRequireDefault(require("./Drawer"));
 
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+var _utilities = require("./utilities");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
@@ -202,77 +296,130 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var OffscreenWorker =
-/*#__PURE__*/
-function () {
-  function OffscreenWorker(data) {
-    _classCallCheck(this, OffscreenWorker);
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
-    this.canvas = data.canvas;
-    this.width = data.canvas.width;
-    this.height = data.canvas.height;
-    this.receiveState(data);
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var StubPixiDrawer =
+/*#__PURE__*/
+function (_Drawer) {
+  _inherits(StubPixiDrawer, _Drawer);
+
+  var _super = _createSuper(StubPixiDrawer);
+
+  /*
+    Because we need to polyfill PIXI for the worker, we give an ability for the drawer to choose which PIXI to use
+  */
+  function StubPixiDrawer(data, PIXI) {
+    var _this;
+
+    _classCallCheck(this, StubPixiDrawer);
+
+    _this = _super.call(this, data);
+    _this.PIXI = PIXI;
+    _this.app = new _this.PIXI.Application({
+      width: _this.width,
+      height: _this.height,
+      backgroundColor: 0xffffff,
+      antialias: true,
+      view: _this.canvas
+    });
+    return _this;
   }
 
-  _createClass(OffscreenWorker, [{
-    key: "receiveState",
-    value: function receiveState(data) {
-      this.minX = data.minX;
-      this.maxX = data.maxX;
-      this.minY = data.minY;
-      this.maxY = data.maxY;
-      this.currentXRange = _toConsumableArray(data.currentXRange);
-      this.currentYRange = _toConsumableArray(data.currentYRange);
-      this.count = data.count;
-      this.controls = data.controls;
-      this.needsAnimation = true;
-    }
-  }, {
-    key: "tick",
-    value: function tick() {
-      postMessage({
-        type: "tick"
-      });
-    }
-  }, {
+  _createClass(StubPixiDrawer, [{
     key: "animate",
-    value: function animate() {}
+    value: function animate() {
+      if (!this.needsAnimation) {
+        this.tick();
+        return;
+      }
+
+      var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
+      var scaleYWindowSpace = (0, _utilities.scale)([this.minY, this.maxY], [0, this.height]);
+      var toReturnY = scaleYWindowSpace(this.currentYRange[1]);
+      var windowWidth = this.currentXRange[1] - this.currentXRange[0];
+      var windowHeight = this.currentYRange[1] - this.currentYRange[0];
+      var currBoxWidth = (this.maxX - this.minX) / (this.currentXRange[1] - this.currentXRange[0]) * this.trueBoxWidth;
+
+      var _iterator = _createForOfIteratorHelper(this.columns),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var column = _step.value;
+          var columnX = scaleX(column.x);
+          column.element.visible = columnX + currBoxWidth > 0;
+
+          if (column.element.visible) {
+            // Shift entire column as rectangles are shifted appropriate amount with in column
+            column.element.position.set(columnX, toReturnY / 2); // Rescale shapes on screen
+
+            column.element.transform.scale.set(this.canvas.width / windowWidth, this.canvas.height / windowHeight);
+            column.element.updateTransform();
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+
+      this.needsAnimation = false;
+      this.tick();
+    }
   }, {
     key: "render",
-    value: function render() {}
-  }], [{
-    key: "onmessager",
-    value: function onmessager(self) {
-      var _this = this;
+    value: function render() {
+      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+      this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
+      this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
+      this.app.ticker.remove(this.animate, this);
+      this.app.stage.removeChildren();
+      this.columns = [];
 
-      return function (e) {
-        switch (e.data.type) {
-          case "init":
-            self.engine = new _this(e.data);
-            break;
+      for (var x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
+        var currentColumn = new this.PIXI.Container();
+        this.columns.push({
+          x: x,
+          element: currentColumn
+        });
+        this.app.stage.addChild(currentColumn);
 
-          case "state":
-            self.engine.receiveState(e.data);
-            break;
+        for (var y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
+          var rect = new this.PIXI.Graphics();
+          rect.beginFill((0, _utilities.rgbToHex)(Math.floor(this.scaleRed(x)), 0, Math.floor(this.scaleBlue(y)))); // Draw rects at true world size, scale to window in animate function
 
-          case "render":
-            self.engine.receiveState(e.data);
-            self.engine.render();
-            break;
+          rect.drawRect(0, 0, this.trueBoxWidth, this.trueBoxHeight);
+          rect.endFill(); // Set x position to 0 as columns will be assigned an x position
 
-          default:
-            console.error("Received unknown message type: ".concat(e));
+          rect.position.set(0, y);
+          currentColumn.addChild(rect);
         }
-      };
+      }
+
+      this.needsAnimation = true;
+      this.app.ticker.add(this.animate, this);
     }
   }]);
 
-  return OffscreenWorker;
-}();
+  return StubPixiDrawer;
+}(_Drawer2.default);
 
-var _default = OffscreenWorker;
+var _default = StubPixiDrawer;
 exports.default = _default;
-},{}],"../../node_modules/base64-js/index.js":[function(require,module,exports) {
+},{"./Drawer":"../scripts/Drawer.js","./utilities":"../scripts/utilities.js"}],"../../node_modules/base64-js/index.js":[function(require,module,exports) {
 'use strict'
 
 exports.byteLength = byteLength
@@ -43972,19 +44119,11 @@ exports.default = _default2;
 },{"buffer":"../../node_modules/buffer/index.js"}],"../scripts/offscreen-pixi-worker.js":[function(require,module,exports) {
 "use strict";
 
-var _utilities = require("./utilities");
-
-var _offscreenWorker = _interopRequireDefault(require("./offscreen-worker"));
+var _stubPixiDrawer = _interopRequireDefault(require("./stub-pixi-drawer"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -44006,110 +44145,31 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-var OffscreenPixiWorker =
+var OffscreenPixiDrawer =
 /*#__PURE__*/
-function (_OffscreenWorker) {
-  _inherits(OffscreenPixiWorker, _OffscreenWorker);
+function (_StubPixiDrawer) {
+  _inherits(OffscreenPixiDrawer, _StubPixiDrawer);
 
-  var _super = _createSuper(OffscreenPixiWorker);
+  var _super = _createSuper(OffscreenPixiDrawer);
 
-  function OffscreenPixiWorker(data) {
-    var _this;
+  function OffscreenPixiDrawer() {
+    _classCallCheck(this, OffscreenPixiDrawer);
 
-    _classCallCheck(this, OffscreenPixiWorker);
-
-    _this = _super.call(this, data);
-    _this.app = new PIXI.Application({
-      width: _this.width,
-      height: _this.height,
-      backgroundColor: 0xffffff,
-      antialias: true,
-      view: _this.canvas
-    });
-    return _this;
+    return _super.apply(this, arguments);
   }
 
-  _createClass(OffscreenPixiWorker, [{
-    key: "animate",
-    value: function animate() {
-      if (!this.needsAnimation) {
-        this.tick();
-        return;
-      }
-
-      var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
-      var scaleYWindowSpace = (0, _utilities.scale)([this.minY, this.maxY], [0, this.height]);
-      var toReturnY = scaleYWindowSpace(this.currentYRange[1]);
-      var windowWidth = this.currentXRange[1] - this.currentXRange[0];
-      var windowHeight = this.currentYRange[1] - this.currentYRange[0];
-      var currBoxWidth = (this.maxX - this.minX) / (this.currentXRange[1] - this.currentXRange[0]) * this.trueBoxWidth;
-
-      var _iterator = _createForOfIteratorHelper(this.columns),
-          _step;
-
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var column = _step.value;
-          var columnX = scaleX(column.x);
-          column.element.visible = columnX + currBoxWidth > 0;
-
-          if (column.element.visible) {
-            // Shift entire column as rectangles are shifted appropriate amount with in column
-            column.element.position.set(columnX, toReturnY / 2); // Rescale shapes on screen
-
-            column.element.transform.scale.set(this.canvas.width / windowWidth, this.canvas.height / windowHeight);
-            column.element.updateTransform();
-          }
-        }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
-      }
-
-      this.needsAnimation = false;
-      this.tick();
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
-      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
-      this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
-      this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
-      this.app.ticker.remove(this.animate, this);
-      this.app.stage.removeChildren();
-      this.columns = [];
-
-      for (var x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
-        var currentColumn = new PIXI.Container();
-        this.columns.push({
-          x: x,
-          element: currentColumn
-        });
-        this.app.stage.addChild(currentColumn);
-
-        for (var y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
-          var rect = new PIXI.Graphics();
-          rect.beginFill((0, _utilities.rgbToHex)(Math.floor(this.scaleRed(x)), 0, Math.floor(this.scaleBlue(y)))); // Draw rects at true world size, scale to window in animate function
-
-          rect.drawRect(0, 0, this.trueBoxWidth, this.trueBoxHeight);
-          rect.endFill(); // Set x position to 0 as columns will be assigned an x position
-
-          rect.position.set(0, y);
-          currentColumn.addChild(rect);
-        }
-      }
-
-      this.needsAnimation = true;
-      this.app.ticker.add(this.animate, this);
+  _createClass(OffscreenPixiDrawer, [{
+    key: "tick",
+    value: function tick() {
+      postMessage({
+        type: "tick"
+      });
     }
   }]);
 
-  return OffscreenPixiWorker;
-}(_offscreenWorker.default);
+  return OffscreenPixiDrawer;
+}(_stubPixiDrawer.default); // Following https://github.com/jimbertools/pixiForWorker
 
-self.onmessage = OffscreenPixiWorker.onmessager(self); // Following https://github.com/jimbertools/pixiForWorker
 
 console.debug("Installing PIXI.js worker polyfills");
 self.document = {
@@ -44148,7 +44208,27 @@ self.HTMLVideoElement = function HTMLVideoElement() {}; // https://github.com/pi
 
 
 self.HTMLCanvasElement = self.OffscreenCanvas;
-},{"./utilities":"../scripts/utilities.js","./offscreen-worker":"../scripts/offscreen-worker.js","../scripts/offscreen-pixi-polyfill.js":"../scripts/offscreen-pixi-polyfill.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+
+self.onmessage = function (e) {
+  switch (e.data.type) {
+    case "init":
+      self.drawer = new OffscreenPixiDrawer(e.data, PIXI);
+      break;
+
+    case "state":
+      self.drawer.receiveState(e.data);
+      break;
+
+    case "render":
+      self.drawer.receiveState(e.data);
+      self.drawer.render();
+      break;
+
+    default:
+      console.error("Received unknown message type: ".concat(e));
+  }
+};
+},{"./stub-pixi-drawer":"../scripts/stub-pixi-drawer.js","../scripts/offscreen-pixi-polyfill.js":"../scripts/offscreen-pixi-polyfill.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -44176,7 +44256,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49408" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52187" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

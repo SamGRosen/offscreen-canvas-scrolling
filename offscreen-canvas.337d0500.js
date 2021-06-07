@@ -1000,7 +1000,7 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 		}
 	});
 }(window, FPSMeter));
-},{}],"../scripts/engine.js":[function(require,module,exports) {
+},{}],"../scripts/handler.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1022,17 +1022,23 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToAr
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) { symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); } keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var Engine =
+var Handler =
 /*#__PURE__*/
 function () {
-  function Engine() {
-    _classCallCheck(this, Engine);
+  function Handler() {
+    _classCallCheck(this, Handler);
 
     this.content = document.querySelector(".content");
     this.countLinks = this.content.querySelectorAll(".selector > a");
@@ -1058,9 +1064,19 @@ function () {
     this.initControls();
   }
 
-  _createClass(Engine, [{
+  _createClass(Handler, [{
     key: "addToDOM",
-    value: function addToDOM() {
+    value: function addToDOM(Drawer, extraArgs) {
+      var _this = this;
+
+      this.drawer = new Drawer(_objectSpread({
+        canvas: this.canvas
+      }, this.getState()), extraArgs); // Set tick for fps meter, allows drawer to have no knowledge of handler
+
+      this.drawer.tick = function () {
+        return _this.meter.tick();
+      };
+
       this.content.appendChild(this.canvas);
     }
   }, {
@@ -1079,7 +1095,7 @@ function () {
   }, {
     key: "initSettings",
     value: function initSettings() {
-      var _this = this;
+      var _this2 = this;
 
       var count = JSON.parse(localStorage.getItem("count"));
       this.count = count || {
@@ -1088,24 +1104,26 @@ function () {
       };
       localStorage.setItem("count", JSON.stringify(this.count));
       this.countLinks.forEach(function (link, index) {
-        _this.countLinks[_this.count.index].classList.toggle("selected", true);
+        _this2.countLinks[_this2.count.index].classList.toggle("selected", true);
 
         link.addEventListener("click", function (event) {
           event.preventDefault();
           event.stopPropagation();
 
-          _this.countLinks[_this.count.index].classList.toggle("selected", false);
+          _this2.countLinks[_this2.count.index].classList.toggle("selected", false);
 
-          _this.count = {
+          _this2.count = {
             index: index,
             value: parseInt(link.innerText)
           };
 
-          _this.countLinks[_this.count.index].classList.toggle("selected", true);
+          _this2.countLinks[_this2.count.index].classList.toggle("selected", true);
 
-          localStorage.setItem("count", JSON.stringify(_this.count));
+          localStorage.setItem("count", JSON.stringify(_this2.count));
 
-          _this.render();
+          _this2.sendDrawerState();
+
+          _this2.forceDrawerRender();
         });
       });
       var controls = JSON.parse(localStorage.getItem("controls"));
@@ -1117,98 +1135,106 @@ function () {
       document.getElementById("lock-x").checked = this.controls.lockedX;
       document.getElementById("lock-y").checked = this.controls.lockedY;
       document.querySelector("#lock-x").addEventListener("change", function (event) {
-        _this.controls.lockedX = event.target.checked;
-        localStorage.setItem("controls", JSON.stringify(_this.controls));
+        _this2.controls.lockedX = event.target.checked;
+        localStorage.setItem("controls", JSON.stringify(_this2.controls));
+
+        _this2.sendDrawerState();
       });
       document.querySelector("#lock-y").addEventListener("change", function (event) {
-        _this.controls.lockedY = event.target.checked;
-        localStorage.setItem("controls", JSON.stringify(_this.controls));
+        _this2.controls.lockedY = event.target.checked;
+        localStorage.setItem("controls", JSON.stringify(_this2.controls));
+
+        _this2.sendDrawerState();
       });
     }
   }, {
     key: "initControls",
     value: function initControls() {
-      var _this2 = this;
+      var _this3 = this;
 
       this.mouseReader.addEventListener("wheel", function (event) {
-        if (!_this2.controls.lockedX) {
-          var previousX = _toConsumableArray(_this2.currentXRange);
+        if (!_this3.controls.lockedX) {
+          var previousX = _toConsumableArray(_this3.currentXRange);
 
-          _this2.currentXRange[0] -= event.wheelDelta / 50;
-          _this2.currentXRange[1] += event.wheelDelta / 50;
-          _this2.currentXRange[0] = Math.max(_this2.currentXRange[0], _this2.minX);
-          _this2.currentXRange[1] = Math.min(_this2.currentXRange[1], _this2.maxX);
+          _this3.currentXRange[0] -= event.wheelDelta / 50;
+          _this3.currentXRange[1] += event.wheelDelta / 50;
+          _this3.currentXRange[0] = Math.max(_this3.currentXRange[0], _this3.minX);
+          _this3.currentXRange[1] = Math.min(_this3.currentXRange[1], _this3.maxX);
 
-          if (_this2.currentXRange[1] < _this2.currentXRange[0]) {
+          if (_this3.currentXRange[1] < _this3.currentXRange[0]) {
             // Zoom in limit
-            _this2.currentXRange = previousX;
+            _this3.currentXRange = previousX;
           }
         }
 
-        if (!_this2.controls.lockedY) {
-          var previousY = _toConsumableArray(_this2.currentYRange);
+        if (!_this3.controls.lockedY) {
+          var previousY = _toConsumableArray(_this3.currentYRange);
 
-          _this2.currentYRange[0] -= event.wheelDelta / 50;
-          _this2.currentYRange[1] += event.wheelDelta / 50;
-          _this2.currentYRange[0] = Math.max(_this2.currentYRange[0], _this2.minY);
-          _this2.currentYRange[1] = Math.min(_this2.currentYRange[1], _this2.maxY);
+          _this3.currentYRange[0] -= event.wheelDelta / 50;
+          _this3.currentYRange[1] += event.wheelDelta / 50;
+          _this3.currentYRange[0] = Math.max(_this3.currentYRange[0], _this3.minY);
+          _this3.currentYRange[1] = Math.min(_this3.currentYRange[1], _this3.maxY);
 
-          if (_this2.currentYRange[1] < _this2.currentYRange[0]) {
+          if (_this3.currentYRange[1] < _this3.currentYRange[0]) {
             // Zoom in limit
-            _this2.currentYRange = previousY;
+            _this3.currentYRange = previousY;
           }
         }
 
-        _this2.needsAnimation = true;
+        _this3.needsAnimation = true;
 
-        _this2.updateSelectionWindowDisplay();
+        _this3.updateSelectionWindowDisplay();
+
+        _this3.sendDrawerState();
 
         return false;
       }, false);
       this.isMoving = false;
       this.mouseReader.addEventListener("mousedown", function (event) {
-        _this2.isMoving = true;
+        _this3.isMoving = true;
       }, false);
       this.mouseReader.addEventListener("mousemove", function (event) {
-        if (!_this2.isMoving) {
+        if (!_this3.isMoving) {
           return false;
         }
 
-        if (!_this2.controls.lockedX) {
-          var previousX = _toConsumableArray(_this2.currentXRange);
+        if (!_this3.controls.lockedX) {
+          var previousX = _toConsumableArray(_this3.currentXRange);
 
-          _this2.currentXRange[0] -= event.movementX;
-          _this2.currentXRange[1] -= event.movementX;
-          _this2.currentXRange[0] = Math.max(_this2.currentXRange[0], _this2.minX);
-          _this2.currentXRange[1] = Math.min(_this2.currentXRange[1], _this2.maxX);
+          _this3.currentXRange[0] -= event.movementX;
+          _this3.currentXRange[1] -= event.movementX;
+          _this3.currentXRange[0] = Math.max(_this3.currentXRange[0], _this3.minX);
+          _this3.currentXRange[1] = Math.min(_this3.currentXRange[1], _this3.maxX);
 
-          if (_this2.currentXRange[1] < _this2.currentXRange[0]) {
-            _this2.currentXRange = previousX;
+          if (_this3.currentXRange[1] < _this3.currentXRange[0]) {
+            _this3.currentXRange = previousX;
           }
         }
 
-        if (!_this2.controls.lockedY) {
-          var previousY = _toConsumableArray(_this2.currentYRange);
+        if (!_this3.controls.lockedY) {
+          var previousY = _toConsumableArray(_this3.currentYRange);
 
-          _this2.currentYRange[0] -= event.movementY;
-          _this2.currentYRange[1] -= event.movementY;
-          _this2.currentYRange[0] = Math.max(_this2.currentYRange[0], _this2.minY);
-          _this2.currentYRange[1] = Math.min(_this2.currentYRange[1], _this2.maxY);
+          _this3.currentYRange[0] -= event.movementY;
+          _this3.currentYRange[1] -= event.movementY;
+          _this3.currentYRange[0] = Math.max(_this3.currentYRange[0], _this3.minY);
+          _this3.currentYRange[1] = Math.min(_this3.currentYRange[1], _this3.maxY);
 
-          if (_this2.currentYRange[1] < _this2.currentYRange[0]) {
-            _this2.currentYRange = previousY;
+          if (_this3.currentYRange[1] < _this3.currentYRange[0]) {
+            _this3.currentYRange = previousY;
           }
         }
 
-        _this2.needsAnimation = true;
+        _this3.needsAnimation = true;
 
-        _this2.updateSelectionWindowDisplay();
+        _this3.sendDrawerState();
+
+        _this3.updateSelectionWindowDisplay();
       }, false);
       this.mouseReader.addEventListener("mouseup", function (event) {
-        _this2.isMoving = false;
+        _this3.isMoving = false;
       });
       this.mouseReader.addEventListener("mouseleave", function (event) {
-        _this2.isMoving = false;
+        _this3.isMoving = false;
       });
     }
   }, {
@@ -1218,16 +1244,37 @@ function () {
       document.querySelector(".selection-window").textContent = "[".concat(this.currentXRange[0].toFixed(2), ", ").concat(this.currentXRange[1].toFixed(2), "] x [").concat(this.currentYRange[0].toFixed(2), ", ").concat(this.currentYRange[1].toFixed(2), "]");
     }
   }, {
-    key: "render",
-    value: function render() {}
+    key: "sendDrawerState",
+    value: function sendDrawerState() {
+      this.drawer.receiveState(_objectSpread({}, this.getState()));
+    }
+  }, {
+    key: "getState",
+    value: function getState() {
+      return {
+        minX: this.minX,
+        maxX: this.maxX,
+        minY: this.minY,
+        maxY: this.maxY,
+        controls: this.controls,
+        currentXRange: this.currentXRange,
+        currentYRange: this.currentYRange,
+        count: this.count
+      };
+    }
+  }, {
+    key: "forceDrawerRender",
+    value: function forceDrawerRender() {
+      this.drawer.render();
+    }
   }]);
 
-  return Engine;
+  return Handler;
 }();
 
-var _default = Engine;
+var _default = Handler;
 exports.default = _default;
-},{"fpsmeter":"../../node_modules/fpsmeter/dist/fpsmeter.js"}],"../scripts/offscreen-engine.js":[function(require,module,exports) {
+},{"fpsmeter":"../../node_modules/fpsmeter/dist/fpsmeter.js"}],"../scripts/offscreen-handler.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1235,7 +1282,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-var _engine = _interopRequireDefault(require("./engine"));
+var _handler = _interopRequireDefault(require("./handler"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1253,10 +1300,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
-
-function _superPropBase(object, property) { while (!Object.prototype.hasOwnProperty.call(object, property)) { object = _getPrototypeOf(object); if (object === null) break; } return object; }
-
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
@@ -1271,21 +1314,22 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-var OffscreenEngine =
+var OffscreenHandler =
 /*#__PURE__*/
-function (_Engine) {
-  _inherits(OffscreenEngine, _Engine);
+function (_Handler) {
+  _inherits(OffscreenHandler, _Handler);
 
-  var _super = _createSuper(OffscreenEngine);
+  var _super = _createSuper(OffscreenHandler);
 
-  function OffscreenEngine() {
+  function OffscreenHandler() {
     var _this;
 
-    _classCallCheck(this, OffscreenEngine);
+    _classCallCheck(this, OffscreenHandler);
 
     _this = _super.call(this); // Create a div for reading mouse events
 
-    _this.mouseReader = document.createElement("div");
+    _this.mouseReader = document.createElement("div"); // Ensure div is directly on top of canvas
+
     _this.canvas.style.position = "absolute";
     _this.mouseReader.id = "mouse-reader"; // Reinit controls with new mouse reader
 
@@ -1294,13 +1338,12 @@ function (_Engine) {
     return _this;
   }
 
-  _createClass(OffscreenEngine, [{
+  _createClass(OffscreenHandler, [{
     key: "addToDOM",
     value: function addToDOM(worker) {
       var _this2 = this;
 
-      _get(_getPrototypeOf(OffscreenEngine.prototype), "addToDOM", this).call(this);
-
+      this.content.appendChild(this.canvas);
       this.content.appendChild(this.mouseReader);
       this.offscreenCanvas = this.canvas.transferControlToOffscreen();
       this.worker = worker;
@@ -1316,75 +1359,39 @@ function (_Engine) {
       };
     }
   }, {
-    key: "initSettings",
-    value: function initSettings() {
-      _get(_getPrototypeOf(OffscreenEngine.prototype), "initSettings", this).call(this);
-
-      document.querySelector("#lock-x").addEventListener("change", this.sendState.bind(this));
-      document.querySelector("#lock-y").addEventListener("change", this.sendState.bind(this));
-    }
-  }, {
-    key: "initControls",
-    value: function initControls() {
-      var _this3 = this;
-
-      _get(_getPrototypeOf(OffscreenEngine.prototype), "initControls", this).call(this);
-
-      this.mouseReader.addEventListener("wheel", this.sendState.bind(this));
-      this.mouseReader.addEventListener("mousemove", function () {
-        if (_this3.isMoving) {
-          _this3.sendState();
-        }
-      });
-    }
-  }, {
-    key: "sendState",
-    value: function sendState() {
+    key: "sendDrawerState",
+    value: function sendDrawerState() {
       this.worker.postMessage(_objectSpread({
         type: "state"
       }, this.getState()));
     }
   }, {
-    key: "getState",
-    value: function getState() {
-      return {
-        minX: this.minX,
-        maxX: this.maxX,
-        minY: this.minY,
-        maxY: this.maxY,
-        controls: this.controls,
-        currentXRange: this.currentXRange,
-        currentYRange: this.currentYRange,
-        count: this.count.value
-      };
-    }
-  }, {
-    key: "render",
-    value: function render() {
+    key: "forceDrawerRender",
+    value: function forceDrawerRender() {
       this.worker.postMessage(_objectSpread({
         type: "render"
       }, this.getState()));
     }
   }]);
 
-  return OffscreenEngine;
-}(_engine.default);
+  return OffscreenHandler;
+}(_handler.default);
 
-var _default = OffscreenEngine;
+var _default = OffscreenHandler;
 exports.default = _default;
-},{"./engine":"../scripts/engine.js"}],"../scripts/offscreen-canvas.js":[function(require,module,exports) {
+},{"./handler":"../scripts/handler.js"}],"../scripts/offscreen-canvas.js":[function(require,module,exports) {
 "use strict";
 
-var _offscreenEngine = _interopRequireDefault(require("./offscreen-engine"));
+var _offscreenHandler = _interopRequireDefault(require("./offscreen-handler"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 document.addEventListener("DOMContentLoaded", function () {
-  var engine = new _offscreenEngine.default();
-  engine.addToDOM(new Worker("/offscreen-canvas-worker.802eaa34.js"));
-  engine.render();
+  var handler = new _offscreenHandler.default();
+  handler.addToDOM(new Worker("/offscreen-canvas-worker.802eaa34.js"));
+  handler.forceDrawerRender();
 });
-},{"./offscreen-engine":"../scripts/offscreen-engine.js","./offscreen-canvas-worker.js":[["offscreen-canvas-worker.802eaa34.js","../scripts/offscreen-canvas-worker.js"],"offscreen-canvas-worker.802eaa34.js.map","../scripts/offscreen-canvas-worker.js"]}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"./offscreen-handler":"../scripts/offscreen-handler.js","./offscreen-canvas-worker.js":[["offscreen-canvas-worker.802eaa34.js","../scripts/offscreen-canvas-worker.js"],"offscreen-canvas-worker.802eaa34.js.map","../scripts/offscreen-canvas-worker.js"]}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -1412,7 +1419,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49408" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52187" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

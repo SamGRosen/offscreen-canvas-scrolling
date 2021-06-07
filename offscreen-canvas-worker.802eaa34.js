@@ -127,6 +127,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
+exports.createMessanger = void 0;
 
 function scale(domain, range) {
   var domainLength = domain[1] - domain[0];
@@ -176,7 +177,31 @@ function componentToHex(c) {
 function rgbToHex(r, g, b) {
   return parseInt(Number("0x" + componentToHex(r) + componentToHex(g) + componentToHex(b)), 10);
 }
-},{}],"../scripts/offscreen-worker.js":[function(require,module,exports) {
+
+var createMessanger = function createMessanger(clazz, self) {
+  return function (e) {
+    switch (e.data.type) {
+      case "init":
+        self.drawer = new clazz(e.data);
+        break;
+
+      case "state":
+        self.drawer.receiveState(e.data);
+        break;
+
+      case "render":
+        self.drawer.receiveState(e.data);
+        self.drawer.render();
+        break;
+
+      default:
+        console.error("Received unknown message type: ".concat(e));
+    }
+  };
+};
+
+exports.createMessanger = createMessanger;
+},{}],"../scripts/drawer.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -202,11 +227,11 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var OffscreenWorker =
+var Drawer =
 /*#__PURE__*/
 function () {
-  function OffscreenWorker(data) {
-    _classCallCheck(this, OffscreenWorker);
+  function Drawer(data) {
+    _classCallCheck(this, Drawer);
 
     this.canvas = data.canvas;
     this.width = data.canvas.width;
@@ -214,7 +239,7 @@ function () {
     this.receiveState(data);
   }
 
-  _createClass(OffscreenWorker, [{
+  _createClass(Drawer, [{
     key: "receiveState",
     value: function receiveState(data) {
       this.minX = data.minX;
@@ -229,55 +254,31 @@ function () {
     }
   }, {
     key: "tick",
-    value: function tick() {
-      postMessage({
-        type: "tick"
-      });
-    }
+    value: function tick() {}
   }, {
     key: "animate",
     value: function animate() {}
   }, {
     key: "render",
     value: function render() {}
-  }], [{
-    key: "onmessager",
-    value: function onmessager(self) {
-      var _this = this;
-
-      return function (e) {
-        switch (e.data.type) {
-          case "init":
-            self.engine = new _this(e.data);
-            break;
-
-          case "state":
-            self.engine.receiveState(e.data);
-            break;
-
-          case "render":
-            self.engine.receiveState(e.data);
-            self.engine.render();
-            break;
-
-          default:
-            console.error("Received unknown message type: ".concat(e));
-        }
-      };
-    }
   }]);
 
-  return OffscreenWorker;
+  return Drawer;
 }();
 
-var _default = OffscreenWorker;
+var _default = Drawer;
 exports.default = _default;
-},{}],"../scripts/offscreen-canvas-worker.js":[function(require,module,exports) {
+},{}],"../scripts/base-canvas-drawer.js":[function(require,module,exports) {
 "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
 
 var _utilities = require("./utilities");
 
-var _offscreenWorker = _interopRequireDefault(require("./offscreen-worker"));
+var _drawer = _interopRequireDefault(require("./drawer"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -303,26 +304,24 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-console.log(10);
-
-var OffscreenCanvasWorker =
+var BaseCanvasDrawer =
 /*#__PURE__*/
-function (_OffscreenWorker) {
-  _inherits(OffscreenCanvasWorker, _OffscreenWorker);
+function (_Drawer) {
+  _inherits(BaseCanvasDrawer, _Drawer);
 
-  var _super = _createSuper(OffscreenCanvasWorker);
+  var _super = _createSuper(BaseCanvasDrawer);
 
-  function OffscreenCanvasWorker(data) {
+  function BaseCanvasDrawer(data) {
     var _this;
 
-    _classCallCheck(this, OffscreenCanvasWorker);
+    _classCallCheck(this, BaseCanvasDrawer);
 
     _this = _super.call(this, data);
     _this.ctx = _this.canvas.getContext("2d");
     return _this;
   }
 
-  _createClass(OffscreenCanvasWorker, [{
+  _createClass(BaseCanvasDrawer, [{
     key: "animate",
     value: function animate() {
       if (!this.needsAnimation) {
@@ -350,14 +349,14 @@ function (_OffscreenWorker) {
       }
 
       this.needsAnimation = false;
-      this.tick();
       this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+      this.tick();
     }
   }, {
     key: "render",
     value: function render() {
-      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
-      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
+      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
       this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
       this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
 
@@ -371,11 +370,69 @@ function (_OffscreenWorker) {
     }
   }]);
 
-  return OffscreenCanvasWorker;
-}(_offscreenWorker.default);
+  return BaseCanvasDrawer;
+}(_drawer.default);
 
-self.onmessage = OffscreenCanvasWorker.onmessager(self);
-},{"./utilities":"../scripts/utilities.js","./offscreen-worker":"../scripts/offscreen-worker.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+var _default = BaseCanvasDrawer;
+exports.default = _default;
+},{"./utilities":"../scripts/utilities.js","./drawer":"../scripts/drawer.js"}],"../scripts/offscreen-canvas-worker.js":[function(require,module,exports) {
+"use strict";
+
+var _baseCanvasDrawer = _interopRequireDefault(require("./base-canvas-drawer"));
+
+var _utilities = require("./utilities");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var OffscreenBaseCanvasDrawer =
+/*#__PURE__*/
+function (_BaseCanvasDrawer) {
+  _inherits(OffscreenBaseCanvasDrawer, _BaseCanvasDrawer);
+
+  var _super = _createSuper(OffscreenBaseCanvasDrawer);
+
+  function OffscreenBaseCanvasDrawer() {
+    _classCallCheck(this, OffscreenBaseCanvasDrawer);
+
+    return _super.apply(this, arguments);
+  }
+
+  _createClass(OffscreenBaseCanvasDrawer, [{
+    key: "tick",
+    value: function tick() {
+      postMessage({
+        type: "tick"
+      });
+    }
+  }]);
+
+  return OffscreenBaseCanvasDrawer;
+}(_baseCanvasDrawer.default);
+
+self.onmessage = (0, _utilities.createMessanger)(OffscreenBaseCanvasDrawer, self);
+},{"./base-canvas-drawer":"../scripts/base-canvas-drawer.js","./utilities":"../scripts/utilities.js"}],"../../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -403,7 +460,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49408" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52187" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
