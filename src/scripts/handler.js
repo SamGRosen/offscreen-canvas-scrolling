@@ -28,11 +28,14 @@ class Handler {
     this.initControls();
   }
 
-  addToDOM(Drawer) {
-    this.drawer = new Drawer({
-      canvas: this.canvas,
-      ...this.getState(),
-    });
+  addToDOM(Drawer, extraArgs) {
+    this.drawer = new Drawer(
+      {
+        canvas: this.canvas,
+        ...this.getState(),
+      },
+      extraArgs
+    );
 
     // Set tick for fps meter, allows drawer to have no knowledge of handler
     this.drawer.tick = () => this.meter.tick();

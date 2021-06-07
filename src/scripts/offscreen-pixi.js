@@ -1,8 +1,8 @@
-import OffscreenEngine from "./offscreen-engine";
+import OffscreenHandler from "./offscreen-handler";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const engine = new OffscreenEngine();
+  const engine = new OffscreenHandler();
   engine.addToDOM(new Worker("../scripts/offscreen-pixi-worker.js"));
 
-  engine.render();
+  engine.forceDrawerRender();
 });
