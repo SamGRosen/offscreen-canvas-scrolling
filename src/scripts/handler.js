@@ -1,10 +1,9 @@
 import "fpsmeter";
 
-class Engine {
+class Handler {
   constructor() {
     this.content = document.querySelector(".content");
     this.countLinks = this.content.querySelectorAll(".selector > a");
-
     this.canvas = document.createElement("canvas");
 
     this.width = Math.min(this.content.clientWidth, 1000);
@@ -29,7 +28,17 @@ class Engine {
     this.initControls();
   }
 
-  addToDOM() {
+  addToDOM(Drawer, extraArgs) {
+    this.drawer = new Drawer(
+      {
+        canvas: this.canvas,
+        ...this.getState(),
+      },
+      extraArgs
+    );
+
+    // Set tick for fps meter, allows drawer to have no knowledge of handler
+    this.drawer.tick = () => this.meter.tick();
     this.content.appendChild(this.canvas);
   }
 
@@ -63,7 +72,8 @@ class Engine {
 
         localStorage.setItem("count", JSON.stringify(this.count));
 
-        this.render();
+        this.sendDrawerState();
+        this.forceDrawerRender();
       });
     });
 
@@ -77,11 +87,13 @@ class Engine {
     document.querySelector("#lock-x").addEventListener("change", (event) => {
       this.controls.lockedX = event.target.checked;
       localStorage.setItem("controls", JSON.stringify(this.controls));
+      this.sendDrawerState();
     });
 
     document.querySelector("#lock-y").addEventListener("change", (event) => {
       this.controls.lockedY = event.target.checked;
       localStorage.setItem("controls", JSON.stringify(this.controls));
+      this.sendDrawerState();
     });
   }
 
@@ -117,6 +129,8 @@ class Engine {
 
         this.needsAnimation = true;
         this.updateSelectionWindowDisplay();
+        this.sendDrawerState();
+
         return false;
       },
       false
@@ -163,6 +177,7 @@ class Engine {
         }
 
         this.needsAnimation = true;
+        this.sendDrawerState();
         this.updateSelectionWindowDisplay();
       },
       false
@@ -187,7 +202,26 @@ class Engine {
     )}, ${this.currentYRange[1].toFixed(2)}]`;
   }
 
-  render() {}
+  sendDrawerState() {
+    this.drawer.receiveState({ ...this.getState() });
+  }
+
+  getState() {
+    return {
+      minX: this.minX,
+      maxX: this.maxX,
+      minY: this.minY,
+      maxY: this.maxY,
+      controls: this.controls,
+      currentXRange: this.currentXRange,
+      currentYRange: this.currentYRange,
+      count: this.count,
+    };
+  }
+
+  forceDrawerRender() {
+    this.drawer.render();
+  }
 }
 
-export default Engine;
+export default Handler;

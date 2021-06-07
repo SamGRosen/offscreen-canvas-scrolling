@@ -54,4 +54,23 @@ function rgbToHex(r, g, b) {
   );
 }
 
-export { scale, initShaderProgram, loadShader, rgbToHex };
+const createMessanger = (clazz, self) => {
+  return (e) => {
+    switch (e.data.type) {
+      case "init":
+        self.drawer = new clazz(e.data);
+        break;
+      case "state":
+        self.drawer.receiveState(e.data);
+        break;
+      case "render":
+        self.drawer.receiveState(e.data);
+        self.drawer.render();
+        break;
+      default:
+        console.error(`Received unknown message type: ${e}`);
+    }
+  };
+};
+
+export { scale, initShaderProgram, loadShader, rgbToHex, createMessanger };
