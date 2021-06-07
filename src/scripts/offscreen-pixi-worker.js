@@ -54,8 +54,8 @@ class OffscreenPixiWorker extends OffscreenWorker {
   }
 
   render() {
-    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
-    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
+    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
     this.scaleBlue = scale([this.minX, this.maxX], [0, 256]);
     this.scaleRed = scale([this.minY, this.maxY], [0, 256]);
 

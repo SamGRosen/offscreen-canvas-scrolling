@@ -40,7 +40,7 @@ class OffscreenCanvasWebGLWorker extends OffscreenWorker {
 
     this.gl.uniform1f(
       this.programInfo.uniformLocations.gridSize,
-      Math.sqrt(this.count) / 2
+      Math.sqrt(this.count.value) / 2
     );
     this.gl.uniform4fv(
       this.programInfo.uniformLocations.viewport,
@@ -63,8 +63,8 @@ class OffscreenCanvasWebGLWorker extends OffscreenWorker {
   }
 
   render() {
-    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count);
-    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count);
+    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
 
     this.shaderProgram = initShaderProgram(
       this.gl,

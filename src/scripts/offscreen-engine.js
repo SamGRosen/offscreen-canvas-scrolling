@@ -68,7 +68,7 @@ class OffscreenEngine extends Engine {
       controls: this.controls,
       currentXRange: this.currentXRange,
       currentYRange: this.currentYRange,
-      count: this.count.value,
+      count: this.count,
     };
   }
 
