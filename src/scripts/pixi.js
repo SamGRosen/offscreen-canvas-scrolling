@@ -2,8 +2,8 @@ import Handler from "./handler";
 import PixiDrawer from "./pixi-drawer";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const engine = new Handler();
-  engine.addToDOM(PixiDrawer);
+  const handler = new Handler();
+  handler.addToDOM(PixiDrawer);
 
-  engine.forceDrawerRender();
+  handler.forceDrawerRender();
 });

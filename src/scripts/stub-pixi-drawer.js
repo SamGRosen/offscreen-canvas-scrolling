@@ -2,6 +2,9 @@ import Drawer from "./Drawer";
 import { rgbToHex, scale } from "./utilities";
 
 class StubPixiDrawer extends Drawer {
+  /*
+    Because we need to polyfill PIXI for the worker, we give an ability for the drawer to choose which PIXI to use
+  */
   constructor(data, PIXI) {
     super(data);
 
