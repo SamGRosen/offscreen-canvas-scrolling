@@ -27,25 +27,10 @@ class WebGLCanvasDrawer extends Drawer {
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-    this.gl.vertexAttribPointer(
-      this.programInfo.attribLocations.vertexPosition,
-      2, // numComponents
-      this.gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0 // offset
-    );
-    this.gl.enableVertexAttribArray(
-      this.programInfo.attribLocations.vertexPosition
-    );
+    const viewport = this.getWebGLViewport();
 
-    this.gl.useProgram(this.programInfo.program);
+    this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
-    this.gl.uniform1f(
-      this.programInfo.uniformLocations.gridSize,
-      Math.sqrt(this.count.value) / 2
-    );
     this.gl.uniform4fv(
       this.programInfo.uniformLocations.viewport,
       this.gl.getParameter(this.gl.VIEWPORT)
@@ -56,10 +41,6 @@ class WebGLCanvasDrawer extends Drawer {
       0, // stride
       this.vertexCount // vertex count
     );
-
-    const viewport = this.getWebGLViewport();
-
-    this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
     this.needsAnimation = false;
     this.lastFrame = requestAnimationFrame(this.animate.bind(this));
@@ -125,6 +106,26 @@ class WebGLCanvasDrawer extends Drawer {
       this.gl.STATIC_DRAW
     );
 
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.vertexAttribPointer(
+      this.programInfo.attribLocations.vertexPosition,
+      2, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+    );
+    this.gl.enableVertexAttribArray(
+      this.programInfo.attribLocations.vertexPosition
+    );
+
+    this.gl.useProgram(this.programInfo.program);
+
+    this.gl.uniform1f(
+      this.programInfo.uniformLocations.gridSize,
+      Math.sqrt(this.count.value) / 2
+    );
+
     if (this.lastFrame) {
       cancelAnimationFrame(this.lastFrame);
     }
@@ -134,21 +135,27 @@ class WebGLCanvasDrawer extends Drawer {
 
   getWebGLViewport() {
     // Calculate appropriate webgl viewport given current selection window
-    const scaleXWindowSpace = scale([this.minX, this.maxX], [0, -this.width]);
-    const scaleYWindowSpace = scale([this.minY, this.maxY], [0, -this.height]);
+    const windowWidth = this.currentXRange[1] - this.currentXRange[0];
+    const windowHeight = this.currentYRange[1] - this.currentYRange[0];
+
+    const displayAsIfThisWide =
+      ((this.maxX - this.minX) / windowWidth) * this.width;
+    const displayAsIfThisHigh =
+      ((this.maxY - this.minY) / windowHeight) * this.height;
+
+    const scaleXWindowSpace = scale(
+      [this.minX, this.maxX],
+      [0, -displayAsIfThisWide]
+    );
+    const scaleYWindowSpace = scale(
+      [this.minY, this.maxY],
+      [0, -displayAsIfThisHigh]
+    );
 
     const toReturnX = scaleXWindowSpace(this.currentXRange[0]);
     const toReturnY = scaleYWindowSpace(this.currentYRange[0]);
 
-    const windowWidth = this.currentXRange[1] - this.currentXRange[0];
-    const windowHeight = this.currentYRange[1] - this.currentYRange[0];
-
-    return [
-      toReturnX,
-      toReturnY,
-      ((this.maxX - this.minX) / windowWidth) * this.width,
-      ((this.maxY - this.minY) / windowHeight) * this.height,
-    ];
+    return [toReturnX, toReturnY, displayAsIfThisWide, displayAsIfThisHigh];
   }
 }
 
