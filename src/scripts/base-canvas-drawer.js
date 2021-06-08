@@ -1,4 +1,9 @@
-import { getRandomColor, scale, SuperclusterMapper } from "./utilities";
+import {
+  getRandomColor,
+  scale,
+  SuperclusterMapper,
+  JITTER_FACTOR,
+} from "./utilities";
 import Drawer from "./drawer";
 
 class BaseCanvasDrawer extends Drawer {
@@ -83,7 +88,51 @@ class BaseCanvasDrawer extends Drawer {
     this.animateSquares();
   }
 
-  animateJittered() {}
+  animateJittered() {
+    if (!this.needsAnimation) {
+      this.tick();
+      this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+      return;
+    }
+
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    const scaleX = scale(this.currentXRange, [0, this.width]);
+    const scaleY = scale(this.currentYRange, [0, this.height]);
+
+    const currBoxWidth =
+      ((this.maxX - this.minX) /
+        (this.currentXRange[1] - this.currentXRange[0])) *
+      this.trueBoxWidth;
+
+    const currBoxHeight =
+      ((this.maxY - this.minY) /
+        (this.currentYRange[1] - this.currentYRange[0])) *
+      this.trueBoxHeight;
+
+    const pointsToDraw = this.clusterMap.getClusters(
+      [
+        this.currentXRange[0] - JITTER_FACTOR - currBoxWidth,
+        this.currentYRange[0] - JITTER_FACTOR - currBoxHeight,
+        this.currentXRange[1] + JITTER_FACTOR + currBoxWidth,
+        this.currentYRange[1] + JITTER_FACTOR + currBoxHeight,
+      ],
+      10
+    );
+
+    for (const point of pointsToDraw) {
+      this.ctx.fillStyle = point.color;
+      this.ctx.fillRect(
+        scaleX(point.geometry.coordinates[0]),
+        scaleY(point.geometry.coordinates[1]),
+        currBoxWidth,
+        currBoxHeight
+      );
+    }
+
+    this.tick();
+    this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+    this.needsAnimation = false;
+  }
 
   renderJittered() {
     this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
@@ -91,7 +140,42 @@ class BaseCanvasDrawer extends Drawer {
     this.scaleBlue = scale([this.minX, this.maxX], [0, 256]);
     this.scaleRed = scale([this.minY, this.maxY], [0, 256]);
 
-    this.boxes = {};
+    const corners = [];
+    for (let currX = this.minX; currX < this.maxX; currX += this.trueBoxWidth) {
+      for (
+        let currY = this.minY;
+        currY < this.maxY;
+        currY += this.trueBoxHeight
+      ) {
+        corners.push({
+          geometry: {
+            coordinates: [
+              currX - JITTER_FACTOR / 2 + Math.random() * JITTER_FACTOR,
+              currY - JITTER_FACTOR / 2 + Math.random() * JITTER_FACTOR,
+            ],
+          },
+          color: `rgb(
+            ${this.scaleRed(currY)},
+            0,
+            ${this.scaleBlue(currX)})`,
+        });
+      }
+    }
+
+    this.clusterMap = new SuperclusterMapper(
+      corners,
+      [
+        this.minX - JITTER_FACTOR - this.trueBoxWidth,
+        this.maxX + JITTER_FACTOR + this.trueBoxWidth,
+      ],
+      [
+        this.minY - JITTER_FACTOR - this.trueBoxHeight,
+        this.maxY + JITTER_FACTOR + this.trueBoxHeight,
+      ]
+    );
+
+    this.needsAnimation = true;
+    this.animateJittered();
   }
 
   animateRandom() {
@@ -114,7 +198,7 @@ class BaseCanvasDrawer extends Drawer {
     const scaleX = scale(this.currentXRange, [0, this.width]);
     const scaleY = scale(this.currentYRange, [0, this.height]);
 
-    for (let point of pointsToDraw) {
+    for (const point of pointsToDraw) {
       this.ctx.fillStyle = point.color;
       this.ctx.fillRect(
         scaleX(point.geometry.coordinates[0]),

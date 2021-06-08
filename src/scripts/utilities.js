@@ -1,6 +1,8 @@
 import Supercluster from "supercluster";
 import regeneratorRuntime from "regenerator-runtime";
 
+const JITTER_FACTOR = 250;
+
 function scale(domain, range) {
   const domainLength = domain[1] - domain[0];
   const rangeLength = range[1] - range[0];
@@ -136,4 +138,5 @@ export {
   createMessanger,
   SuperclusterMapper,
   getRandomColor,
+  JITTER_FACTOR,
 };

@@ -1,5 +1,10 @@
 import Drawer from "./Drawer";
-import { rgbToHex, scale, SuperclusterMapper } from "./utilities";
+import {
+  JITTER_FACTOR,
+  rgbToHex,
+  scale,
+  SuperclusterMapper,
+} from "./utilities";
 
 class StubPixiDrawer extends Drawer {
   /*
@@ -98,6 +103,51 @@ class StubPixiDrawer extends Drawer {
     }
     this.needsAnimation = true;
     this.app.ticker.add(this.animateSquares, this);
+  }
+
+  animateJittered() {
+    this.animateSquares();
+  }
+
+  renderJittered() {
+    this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+    this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+    this.scaleBlue = scale([this.minX, this.maxX], [0, 256]);
+    this.scaleRed = scale([this.minY, this.maxY], [0, 256]);
+
+    this.removeTicker();
+    this.app.stage.removeChildren();
+
+    this.columns = [];
+    for (let x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
+      let currentColumn = new this.PIXI.Container();
+      this.columns.push({ x, element: currentColumn });
+      this.app.stage.addChild(currentColumn);
+
+      for (let y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
+        const rect = new this.PIXI.Graphics();
+        rect.beginFill(
+          rgbToHex(
+            Math.floor(this.scaleRed(x)),
+            0,
+            Math.floor(this.scaleBlue(y))
+          )
+        );
+
+        // Draw rects at true world size, scale to window in animate function
+        rect.drawRect(0, 0, this.trueBoxWidth, this.trueBoxHeight);
+        rect.endFill();
+
+        // Set x position to 0 as columns will be assigned an x position
+        rect.position.set(
+          -JITTER_FACTOR / 2 + Math.random() * JITTER_FACTOR,
+          y - JITTER_FACTOR / 2 + Math.random() * JITTER_FACTOR
+        );
+        currentColumn.addChild(rect);
+      }
+    }
+    this.needsAnimation = true;
+    this.app.ticker.add(this.animateJittered, this);
   }
 
   animateRandom() {
