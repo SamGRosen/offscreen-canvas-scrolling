@@ -1,5 +1,6 @@
 import {
   getRandomColor,
+  getRandomColorAlpha,
   scale,
   SuperclusterMapper,
   JITTER_FACTOR,
@@ -250,9 +251,9 @@ class BaseCanvasDrawer extends Drawer {
       return;
     }
 
-    this.ctx.clearRect(0, 0, this.width, this.height);
-    this.ctx.globalAlpha = 0.1;
     this.ctx.globalCompositeOperation = "overlay";
+
+    this.ctx.clearRect(0, 0, this.width, this.height);
 
     const bboxTSNES = [
       this.xTSNEScale(this.currentXRange[0]),
@@ -287,7 +288,7 @@ class BaseCanvasDrawer extends Drawer {
     this.sampleColors = new Map( // Create colors for sample type
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ012"
         .split("")
-        .map((letter) => [letter, getRandomColor()])
+        .map((letter) => [letter, getRandomColorAlpha(0.3)])
     );
 
     this.clusterMap = new SuperclusterMapper(

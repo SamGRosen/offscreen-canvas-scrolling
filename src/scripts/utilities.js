@@ -130,6 +130,13 @@ const getRandomColor = () => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
+const getRandomColorAlpha = (alpha) => {
+  let r = Math.floor(Math.random() * 255);
+  let g = Math.floor(Math.random() * 255);
+  let b = Math.floor(Math.random() * 255);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export {
   scale,
   initShaderProgram,
@@ -138,5 +145,6 @@ export {
   createMessanger,
   SuperclusterMapper,
   getRandomColor,
+  getRandomColorAlpha,
   JITTER_FACTOR,
 };
