@@ -1537,7 +1537,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
-exports.JITTER_FACTOR = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
+exports.JITTER_FACTOR = exports.getRandomColorAlpha = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
 
 var _supercluster = _interopRequireDefault(require("supercluster"));
 
@@ -1753,6 +1753,15 @@ var getRandomColor = function getRandomColor() {
 };
 
 exports.getRandomColor = getRandomColor;
+
+var getRandomColorAlpha = function getRandomColorAlpha(alpha) {
+  var r = Math.floor(Math.random() * 255);
+  var g = Math.floor(Math.random() * 255);
+  var b = Math.floor(Math.random() * 255);
+  return "rgba(".concat(r, ", ").concat(g, ", ").concat(b, ", ").concat(alpha, ")");
+};
+
+exports.getRandomColorAlpha = getRandomColorAlpha;
 },{"supercluster":"../../node_modules/supercluster/index.js","regenerator-runtime":"../../node_modules/regenerator-runtime/runtime.js"}],"../scripts/drawer.js":[function(require,module,exports) {
 "use strict";
 
@@ -2084,9 +2093,8 @@ function (_Drawer) {
         return;
       }
 
-      this.ctx.clearRect(0, 0, this.width, this.height);
-      this.ctx.globalAlpha = 0.1;
       this.ctx.globalCompositeOperation = "overlay";
+      this.ctx.clearRect(0, 0, this.width, this.height);
       var bboxTSNES = [this.xTSNEScale(this.currentXRange[0]), this.yTSNEScale(this.currentYRange[0]), this.xTSNEScale(this.currentXRange[1]), this.yTSNEScale(this.currentYRange[1])];
       var pointsToDraw = this.clusterMap.getClusters(bboxTSNES, 10);
       var scaleX = (0, _utilities.scale)([bboxTSNES[0], bboxTSNES[2]], [0, this.width]);
@@ -2118,7 +2126,7 @@ function (_Drawer) {
       this.yTSNEScale = (0, _utilities.scale)([this.minY, this.maxY], [-10, 10]);
       this.sampleColors = new Map( // Create colors for sample type
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ012".split("").map(function (letter) {
-        return [letter, (0, _utilities.getRandomColor)()];
+        return [letter, (0, _utilities.getRandomColorAlpha)(0.3)];
       }));
       this.clusterMap = new _utilities.SuperclusterMapper(this.csv, [-10, 10], // domain of csv data
       [-10, 10] // range of csv data
@@ -2218,7 +2226,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55690" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55983" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

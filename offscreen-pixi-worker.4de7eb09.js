@@ -1636,7 +1636,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
-exports.JITTER_FACTOR = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
+exports.JITTER_FACTOR = exports.getRandomColorAlpha = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
 
 var _supercluster = _interopRequireDefault(require("supercluster"));
 
@@ -1852,6 +1852,15 @@ var getRandomColor = function getRandomColor() {
 };
 
 exports.getRandomColor = getRandomColor;
+
+var getRandomColorAlpha = function getRandomColorAlpha(alpha) {
+  var r = Math.floor(Math.random() * 255);
+  var g = Math.floor(Math.random() * 255);
+  var b = Math.floor(Math.random() * 255);
+  return "rgba(".concat(r, ", ").concat(g, ", ").concat(b, ", ").concat(alpha, ")");
+};
+
+exports.getRandomColorAlpha = getRandomColorAlpha;
 },{"supercluster":"../../node_modules/supercluster/index.js","regenerator-runtime":"../../node_modules/regenerator-runtime/runtime.js"}],"../scripts/stub-pixi-drawer.js":[function(require,module,exports) {
 "use strict";
 
@@ -46041,7 +46050,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55690" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55983" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
