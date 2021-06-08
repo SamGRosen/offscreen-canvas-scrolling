@@ -2719,7 +2719,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
-exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
+exports.JITTER_FACTOR = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
 
 var _supercluster = _interopRequireDefault(require("supercluster"));
 
@@ -2744,6 +2744,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var JITTER_FACTOR = 250;
+exports.JITTER_FACTOR = JITTER_FACTOR;
 
 function scale(domain, range) {
   var domainLength = domain[1] - domain[0];
@@ -3128,7 +3131,39 @@ function (_Drawer) {
     }
   }, {
     key: "animateJittered",
-    value: function animateJittered() {}
+    value: function animateJittered() {
+      if (!this.needsAnimation) {
+        this.tick();
+        this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+        return;
+      }
+
+      this.ctx.clearRect(0, 0, this.width, this.height);
+      var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
+      var scaleY = (0, _utilities.scale)(this.currentYRange, [0, this.height]);
+      var currBoxWidth = (this.maxX - this.minX) / (this.currentXRange[1] - this.currentXRange[0]) * this.trueBoxWidth;
+      var currBoxHeight = (this.maxY - this.minY) / (this.currentYRange[1] - this.currentYRange[0]) * this.trueBoxHeight;
+      var pointsToDraw = this.clusterMap.getClusters([this.currentXRange[0] - _utilities.JITTER_FACTOR - currBoxWidth, this.currentYRange[0] - _utilities.JITTER_FACTOR - currBoxHeight, this.currentXRange[1] + _utilities.JITTER_FACTOR + currBoxWidth, this.currentYRange[1] + _utilities.JITTER_FACTOR + currBoxHeight], 10);
+
+      var _iterator = _createForOfIteratorHelper(pointsToDraw),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var point = _step.value;
+          this.ctx.fillStyle = point.color;
+          this.ctx.fillRect(scaleX(point.geometry.coordinates[0]), scaleY(point.geometry.coordinates[1]), currBoxWidth, currBoxHeight);
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+
+      this.tick();
+      this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+      this.needsAnimation = false;
+    }
   }, {
     key: "renderJittered",
     value: function renderJittered() {
@@ -3136,7 +3171,22 @@ function (_Drawer) {
       this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
       this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
       this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
-      this.boxes = {};
+      var corners = [];
+
+      for (var currX = this.minX; currX < this.maxX; currX += this.trueBoxWidth) {
+        for (var currY = this.minY; currY < this.maxY; currY += this.trueBoxHeight) {
+          corners.push({
+            geometry: {
+              coordinates: [currX - _utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR, currY - _utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR]
+            },
+            color: "rgb(\n            ".concat(this.scaleRed(currY), ",\n            0,\n            ").concat(this.scaleBlue(currX), ")")
+          });
+        }
+      }
+
+      this.clusterMap = new _utilities.SuperclusterMapper(corners, [this.minX - _utilities.JITTER_FACTOR - this.trueBoxWidth, this.maxX + _utilities.JITTER_FACTOR + this.trueBoxWidth], [this.minY - _utilities.JITTER_FACTOR - this.trueBoxHeight, this.maxY + _utilities.JITTER_FACTOR + this.trueBoxHeight]);
+      this.needsAnimation = true;
+      this.animateJittered();
     }
   }, {
     key: "animateRandom",
@@ -3152,19 +3202,19 @@ function (_Drawer) {
       var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
       var scaleY = (0, _utilities.scale)(this.currentYRange, [0, this.height]);
 
-      var _iterator = _createForOfIteratorHelper(pointsToDraw),
-          _step;
+      var _iterator2 = _createForOfIteratorHelper(pointsToDraw),
+          _step2;
 
       try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var point = _step.value;
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var point = _step2.value;
           this.ctx.fillStyle = point.color;
           this.ctx.fillRect(scaleX(point.geometry.coordinates[0]), scaleY(point.geometry.coordinates[1]), 2, 2);
         }
       } catch (err) {
-        _iterator.e(err);
+        _iterator2.e(err);
       } finally {
-        _iterator.f();
+        _iterator2.f();
       }
 
       this.tick();
@@ -3238,7 +3288,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56906" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50959" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

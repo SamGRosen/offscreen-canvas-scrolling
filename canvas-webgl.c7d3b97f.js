@@ -2813,7 +2813,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
-exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
+exports.JITTER_FACTOR = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
 
 var _supercluster = _interopRequireDefault(require("supercluster"));
 
@@ -2838,6 +2838,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var JITTER_FACTOR = 250;
+exports.JITTER_FACTOR = JITTER_FACTOR;
 
 function scale(domain, range) {
   var domainLength = domain[1] - domain[0];
@@ -3105,6 +3108,20 @@ function (_Drawer) {
   }
 
   _createClass(WebGLCanvasDrawer, [{
+    key: "getWebGLViewport",
+    value: function getWebGLViewport() {
+      // Calculate appropriate webgl viewport given current selection window
+      var windowWidth = this.currentXRange[1] - this.currentXRange[0];
+      var windowHeight = this.currentYRange[1] - this.currentYRange[0];
+      var displayAsIfThisWide = (this.maxX - this.minX) / windowWidth * this.width;
+      var displayAsIfThisHigh = (this.maxY - this.minY) / windowHeight * this.height;
+      var scaleXWindowSpace = (0, _utilities.scale)([this.minX, this.maxX], [0, -displayAsIfThisWide]);
+      var scaleYWindowSpace = (0, _utilities.scale)([this.minY, this.maxY], [0, -displayAsIfThisHigh]);
+      var toReturnX = scaleXWindowSpace(this.currentXRange[0]);
+      var toReturnY = scaleYWindowSpace(this.currentYRange[0]);
+      return [toReturnX, toReturnY, displayAsIfThisWide, displayAsIfThisHigh];
+    }
+  }, {
     key: "animateSquares",
     value: function animateSquares() {
       if (!this.needsAnimation) {
@@ -3170,18 +3187,99 @@ function (_Drawer) {
       this.animateSquares();
     }
   }, {
-    key: "getWebGLViewport",
-    value: function getWebGLViewport() {
-      // Calculate appropriate webgl viewport given current selection window
-      var windowWidth = this.currentXRange[1] - this.currentXRange[0];
-      var windowHeight = this.currentYRange[1] - this.currentYRange[0];
-      var displayAsIfThisWide = (this.maxX - this.minX) / windowWidth * this.width;
-      var displayAsIfThisHigh = (this.maxY - this.minY) / windowHeight * this.height;
-      var scaleXWindowSpace = (0, _utilities.scale)([this.minX, this.maxX], [0, -displayAsIfThisWide]);
-      var scaleYWindowSpace = (0, _utilities.scale)([this.minY, this.maxY], [0, -displayAsIfThisHigh]);
-      var toReturnX = scaleXWindowSpace(this.currentXRange[0]);
-      var toReturnY = scaleYWindowSpace(this.currentYRange[0]);
-      return [toReturnX, toReturnY, displayAsIfThisWide, displayAsIfThisHigh];
+    key: "animateJittered",
+    value: function animateJittered() {
+      if (!this.needsAnimation) {
+        this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+        this.tick();
+        return;
+      }
+
+      this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      var viewport = this.getWebGLViewport();
+      this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+      this.gl.drawArrays(this.gl.TRIANGLES, 0, // stride
+      this.vertexCount // vertex count
+      );
+      this.needsAnimation = false;
+      this.lastFrame = requestAnimationFrame(this.animateJittered.bind(this));
+      this.tick();
+    }
+  }, {
+    key: "renderJittered",
+    value: function renderJittered() {
+      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+      var scaleX = (0, _utilities.scale)([this.minX, this.maxX], [-1, 1]);
+      var scaleY = (0, _utilities.scale)([this.minY, this.maxY], [-1, 1]);
+
+      var scaleXWithJitter = function scaleXWithJitter(x) {
+        var inClipSpace = scaleX(x - _utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR);
+        if (inClipSpace < -1) return -1;
+        if (inClipSpace > 1) return 1;
+        return inClipSpace;
+      };
+
+      var scaleYWithJitter = function scaleYWithJitter(y) {
+        var inClipSpace = scaleY(y - _utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR);
+        if (inClipSpace < -1) return -1;
+        if (inClipSpace > 1) return 1;
+        return inClipSpace;
+      };
+
+      var scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 1]);
+      var scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 1]);
+      this.shaderProgram = (0, _utilities.initShaderProgram)(this.gl, _webgl.colorPointsVertexShader, _webgl.colorPointsFragmentShader);
+      this.programInfo = {
+        program: this.shaderProgram,
+        attribLocations: {
+          vertexPosition: this.gl.getAttribLocation(this.shaderProgram, "aVertexPosition"),
+          vertexColor: this.gl.getAttribLocation(this.shaderProgram, "aVertexColor")
+        }
+      };
+      var colors = [];
+      var positions = [];
+
+      for (var x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
+        for (var y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
+          positions.push(scaleXWithJitter(x), scaleYWithJitter(y), scaleXWithJitter(x + this.trueBoxWidth), scaleYWithJitter(y), scaleXWithJitter(x + this.trueBoxWidth), scaleYWithJitter(y + this.trueBoxHeight));
+          positions.push(scaleXWithJitter(x), scaleYWithJitter(y), scaleXWithJitter(x), scaleYWithJitter(y + this.trueBoxHeight), scaleXWithJitter(x + this.trueBoxWidth), scaleYWithJitter(y + this.trueBoxHeight));
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+          colors.push(scaleRed(y), 0, scaleBlue(x), 1.0);
+        }
+      }
+
+      this.vertexCount = positions.length / 2;
+      this.positionBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+      this.colorBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+      this.gl.vertexAttribPointer(this.programInfo.attribLocations.vertexPosition, 2, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+      );
+      this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+      this.gl.vertexAttribPointer(this.programInfo.attribLocations.vertexColor, 4, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+      );
+      this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexColor);
+      this.gl.useProgram(this.programInfo.program);
+      this.needsAnimation = true;
+      this.animateJittered();
     }
   }, {
     key: "animateRandom",
@@ -3306,7 +3404,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56906" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50959" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

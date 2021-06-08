@@ -1643,7 +1643,7 @@ exports.scale = scale;
 exports.initShaderProgram = initShaderProgram;
 exports.loadShader = loadShader;
 exports.rgbToHex = rgbToHex;
-exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
+exports.JITTER_FACTOR = exports.getRandomColor = exports.SuperclusterMapper = exports.createMessanger = void 0;
 
 var _supercluster = _interopRequireDefault(require("supercluster"));
 
@@ -1668,6 +1668,9 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var JITTER_FACTOR = 250;
+exports.JITTER_FACTOR = JITTER_FACTOR;
 
 function scale(domain, range) {
   var domainLength = domain[1] - domain[0];
@@ -2007,6 +2010,45 @@ function (_Drawer) {
       this.app.ticker.add(this.animateSquares, this);
     }
   }, {
+    key: "animateJittered",
+    value: function animateJittered() {
+      this.animateSquares();
+    }
+  }, {
+    key: "renderJittered",
+    value: function renderJittered() {
+      this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
+      this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
+      this.scaleBlue = (0, _utilities.scale)([this.minX, this.maxX], [0, 256]);
+      this.scaleRed = (0, _utilities.scale)([this.minY, this.maxY], [0, 256]);
+      this.removeTicker();
+      this.app.stage.removeChildren();
+      this.columns = [];
+
+      for (var x = this.minX; x < this.maxX; x += this.trueBoxWidth) {
+        var currentColumn = new this.PIXI.Container();
+        this.columns.push({
+          x: x,
+          element: currentColumn
+        });
+        this.app.stage.addChild(currentColumn);
+
+        for (var y = this.minY; y < this.maxY; y += this.trueBoxHeight) {
+          var rect = new this.PIXI.Graphics();
+          rect.beginFill((0, _utilities.rgbToHex)(Math.floor(this.scaleRed(x)), 0, Math.floor(this.scaleBlue(y)))); // Draw rects at true world size, scale to window in animate function
+
+          rect.drawRect(0, 0, this.trueBoxWidth, this.trueBoxHeight);
+          rect.endFill(); // Set x position to 0 as columns will be assigned an x position
+
+          rect.position.set(-_utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR, y - _utilities.JITTER_FACTOR / 2 + Math.random() * _utilities.JITTER_FACTOR);
+          currentColumn.addChild(rect);
+        }
+      }
+
+      this.needsAnimation = true;
+      this.app.ticker.add(this.animateJittered, this);
+    }
+  }, {
     key: "animateRandom",
     value: function animateRandom() {
       if (!this.needsAnimation) {
@@ -2016,6 +2058,7 @@ function (_Drawer) {
 
       var scaleX = (0, _utilities.scale)(this.currentXRange, [0, this.width]);
       var scaleY = (0, _utilities.scale)(this.currentYRange, [0, this.height]);
+      var pointsToDraw = this.clusterMap.getClusters([this.currentXRange[0], this.currentYRange[0], this.currentXRange[1], this.currentYRange[1]], 10);
 
       var _iterator2 = _createForOfIteratorHelper(this.points),
           _step2;
@@ -2023,18 +2066,36 @@ function (_Drawer) {
       try {
         for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
           var point = _step2.value;
-          var pointX = scaleX(point.x);
-          var pointY = scaleY(point.y);
-          point.element.visible = pointX + 10 > 0 && pointY + 10 > 0;
-
-          if (point.element.visible) {
-            point.element.position.set(pointX, pointY);
-          }
+          point.element.visible = false;
         }
       } catch (err) {
         _iterator2.e(err);
       } finally {
         _iterator2.f();
+      }
+
+      var _iterator3 = _createForOfIteratorHelper(pointsToDraw),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _point = _step3.value;
+
+          if (!_point.element) {
+            // Artifacts from supercluster
+            continue;
+          }
+
+          var pointX = scaleX(_point.geometry.coordinates[0]);
+          var pointY = scaleY(_point.geometry.coordinates[1]);
+          _point.element.visible = true;
+
+          _point.element.position.set(pointX, pointY);
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
       }
 
       this.needsAnimation = false;
@@ -2053,13 +2114,15 @@ function (_Drawer) {
         rect.drawRect(0, 0, 10, 10);
         rect.endFill();
         this.points.push({
-          x: this.minX + Math.random() * (this.maxX - this.minX),
-          y: this.minY + Math.random() * (this.maxY - this.minY),
+          geometry: {
+            coordinates: [this.minX + Math.random() * (this.maxX - this.minX), this.minY + Math.random() * (this.maxY - this.minY)]
+          },
           element: rect
         });
         this.app.stage.addChild(rect);
       }
 
+      this.clusterMap = new _utilities.SuperclusterMapper(this.points, [this.minX, this.maxX], [this.minY, this.maxY]);
       this.needsAnimation = true;
       this.app.ticker.add(this.animateRandom, this);
     }
@@ -45907,7 +45970,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56906" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50959" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
