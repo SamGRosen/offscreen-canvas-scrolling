@@ -1,5 +1,5 @@
 import Drawer from "./Drawer";
-import { rgbToHex, scale } from "./utilities";
+import { rgbToHex, scale, SuperclusterMapper } from "./utilities";
 
 class StubPixiDrawer extends Drawer {
   /*
@@ -109,14 +109,30 @@ class StubPixiDrawer extends Drawer {
     const scaleX = scale(this.currentXRange, [0, this.width]);
     const scaleY = scale(this.currentYRange, [0, this.height]);
 
-    for (const point of this.points) {
-      let pointX = scaleX(point.x);
-      let pointY = scaleY(point.y);
-      point.element.visible = pointX + 10 > 0 && pointY + 10 > 0;
+    const pointsToDraw = this.clusterMap.getClusters(
+      [
+        this.currentXRange[0],
+        this.currentYRange[0],
+        this.currentXRange[1],
+        this.currentYRange[1],
+      ],
+      10
+    );
 
-      if (point.element.visible) {
-        point.element.position.set(pointX, pointY);
+    for (const point of this.points) {
+      point.element.visible = false;
+    }
+
+    for (const point of pointsToDraw) {
+      if (!point.element) {
+        // Artifacts from supercluster
+        continue;
       }
+      let pointX = scaleX(point.geometry.coordinates[0]);
+      let pointY = scaleY(point.geometry.coordinates[1]);
+      point.element.visible = true;
+
+      point.element.position.set(pointX, pointY);
     }
 
     this.needsAnimation = false;
@@ -140,12 +156,22 @@ class StubPixiDrawer extends Drawer {
       rect.drawRect(0, 0, 10, 10);
       rect.endFill();
       this.points.push({
-        x: this.minX + Math.random() * (this.maxX - this.minX),
-        y: this.minY + Math.random() * (this.maxY - this.minY),
+        geometry: {
+          coordinates: [
+            this.minX + Math.random() * (this.maxX - this.minX),
+            this.minY + Math.random() * (this.maxY - this.minY),
+          ],
+        },
         element: rect,
       });
       this.app.stage.addChild(rect);
     }
+
+    this.clusterMap = new SuperclusterMapper(
+      this.points,
+      [this.minX, this.maxX],
+      [this.minY, this.maxY]
+    );
 
     this.needsAnimation = true;
     this.app.ticker.add(this.animateRandom, this);
