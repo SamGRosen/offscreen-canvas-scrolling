@@ -5059,6 +5059,7 @@ function (_Drawer) {
         return;
       }
 
+      this.gl.disable(this.gl.BLEND);
       this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT);
       var viewport = this.getWebGLViewport();
@@ -5359,7 +5360,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59686" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55690" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
