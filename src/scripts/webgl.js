@@ -28,7 +28,7 @@ const colorPointsVertexShader = `
   void main(void) {
     gl_Position = aVertexPosition;
     vColor = aVertexColor;
-    gl_PointSize = 10.0;
+    gl_PointSize = 1.0;
   }
 `;
 

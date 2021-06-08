@@ -417,6 +417,131 @@ class WebGLCanvasDrawer extends Drawer {
     this.needsAnimation = true;
     this.animateRandom();
   }
+
+  animateTSNE() {
+    if (!this.needsAnimation) {
+      this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+      this.tick();
+      return;
+    }
+
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.SRC_COLOR, this.gl.DST_COLOR);
+
+    // Clear the canvas before we start drawing on it.
+    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+    const viewport = this.getWebGLViewport();
+
+    this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+
+    this.gl.drawArrays(
+      this.gl.POINTS,
+      0, // stride
+      this.vertexCount // vertex count
+    );
+
+    this.needsAnimation = false;
+    this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+    this.tick();
+  }
+
+  renderTSNE() {
+    this.sampleColors = new Map( // Create colors for sample type
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ012"
+        .split("")
+        .map((letter) => [
+          letter,
+          [Math.random(), Math.random(), Math.random(), 0.01],
+        ])
+    );
+    this.xTSNEScale = scale([-10, 10], [-1, 1]);
+    this.yTSNEScale = scale([-10, 10], [-1, 1]);
+
+    this.shaderProgram = initShaderProgram(
+      this.gl,
+      colorPointsVertexShader,
+      colorPointsFragmentShader
+    );
+
+    this.programInfo = {
+      program: this.shaderProgram,
+      attribLocations: {
+        vertexPosition: this.gl.getAttribLocation(
+          this.shaderProgram,
+          "aVertexPosition"
+        ),
+        vertexColor: this.gl.getAttribLocation(
+          this.shaderProgram,
+          "aVertexColor"
+        ),
+      },
+    };
+
+    const positions = [];
+    const colors = [];
+    let i = 0;
+    for (const point of this.csv) {
+      positions.push(
+        this.xTSNEScale(point.geometry.coordinates[0]),
+        this.yTSNEScale(point.geometry.coordinates[1])
+      );
+      colors.push(...this.sampleColors.get(point.sample));
+    }
+
+    this.vertexCount = positions.length / 2;
+    this.positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(positions),
+      this.gl.STATIC_DRAW
+    );
+
+    this.colorBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(colors),
+      this.gl.STATIC_DRAW
+    );
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.vertexAttribPointer(
+      this.programInfo.attribLocations.vertexPosition,
+      2, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+    );
+    this.gl.enableVertexAttribArray(
+      this.programInfo.attribLocations.vertexPosition
+    );
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.vertexAttribPointer(
+      this.programInfo.attribLocations.vertexColor,
+      4, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+    );
+    this.gl.enableVertexAttribArray(
+      this.programInfo.attribLocations.vertexColor
+    );
+
+    this.gl.useProgram(this.programInfo.program);
+
+    if (this.lastFrame) {
+      cancelAnimationFrame(this.lastFrame);
+    }
+    this.needsAnimation = true;
+    this.animateTSNE();
+  }
 }
 
 export default WebGLCanvasDrawer;

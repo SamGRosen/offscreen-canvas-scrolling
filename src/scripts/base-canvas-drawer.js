@@ -12,6 +12,12 @@ class BaseCanvasDrawer extends Drawer {
     this.ctx = this.canvas.getContext("2d");
   }
 
+  render() {
+    super.render();
+    this.ctx.globalAlpha = 1.0; // avoid switching datasets ruining opacity
+    this.ctx.globalCompositeOperation = "source-over";
+  }
+
   animateSquares() {
     if (!this.needsAnimation) {
       this.lastFrame = requestAnimationFrame(this.animateSquares.bind(this));
@@ -235,6 +241,63 @@ class BaseCanvasDrawer extends Drawer {
 
     this.needsAnimation = true;
     this.animateRandom();
+  }
+
+  animateTSNE() {
+    if (!this.needsAnimation) {
+      this.tick();
+      this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+      return;
+    }
+
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.globalAlpha = 0.1;
+    this.ctx.globalCompositeOperation = "overlay";
+
+    const bboxTSNES = [
+      this.xTSNEScale(this.currentXRange[0]),
+      this.yTSNEScale(this.currentYRange[0]),
+      this.xTSNEScale(this.currentXRange[1]),
+      this.yTSNEScale(this.currentYRange[1]),
+    ];
+
+    const pointsToDraw = this.clusterMap.getClusters(bboxTSNES, 10);
+    const scaleX = scale([bboxTSNES[0], bboxTSNES[2]], [0, this.width]);
+    const scaleY = scale([bboxTSNES[1], bboxTSNES[3]], [0, this.height]);
+
+    for (const point of pointsToDraw) {
+      this.ctx.fillStyle = this.sampleColors.get(point.sample);
+      this.ctx.fillRect(
+        scaleX(point.geometry.coordinates[0]),
+        scaleY(point.geometry.coordinates[1]),
+        2,
+        2
+      );
+    }
+
+    this.tick();
+    this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+    this.needsAnimation = false;
+  }
+
+  renderTSNE() {
+    this.xTSNEScale = scale([this.minX, this.maxX], [-10, 10]);
+    this.yTSNEScale = scale([this.minY, this.maxY], [-10, 10]);
+
+    this.sampleColors = new Map( // Create colors for sample type
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ012"
+        .split("")
+        .map((letter) => [letter, getRandomColor()])
+    );
+
+    this.clusterMap = new SuperclusterMapper(
+      this.csv,
+      [-10, 10], // domain of csv data
+      [-10, 10] // range of csv data
+    );
+
+    this.needsAnimation = true;
+    this.animateTSNE();
   }
 }
 

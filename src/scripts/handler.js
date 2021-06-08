@@ -1,5 +1,7 @@
 import "fpsmeter";
 
+const axios = require("axios");
+
 class Handler {
   constructor() {
     this.content = document.querySelector(".content");
@@ -100,9 +102,20 @@ class Handler {
     this.dataset = dataset || "squares";
     localStorage.setItem("dataset", JSON.stringify(this.dataset));
     document.getElementById("dataset").value = this.dataset;
+    document.querySelector(".selector").style.display =
+      this.dataset === "tsne" ? "none" : "initial";
+    if (this.dataset === "tsne") {
+      this.loadCsv();
+    }
     document.querySelector("#dataset").addEventListener("change", (event) => {
       this.dataset = event.target.value;
       localStorage.setItem("dataset", JSON.stringify(this.dataset));
+
+      document.querySelector(".selector").style.display =
+        this.dataset === "tsne" ? "none" : "initial";
+      if (this.dataset === "tsne") {
+        this.loadCsv();
+      }
       this.sendDrawerState();
       this.forceDrawerRender();
     });
@@ -217,8 +230,34 @@ class Handler {
     this.drawer.receiveState({ ...this.getState() });
   }
 
+  loadCsv() {
+    if (this.csv) {
+      return; // no need to fetch it twice
+    }
+
+    this.csv = [];
+    axios.get(require("../data/tsne.csv")).then((response) => {
+      response.data.split("\n").forEach((line) => {
+        const parts = line.split(",");
+        if (!parts[0]) {
+          return; // skip bad rows
+        }
+        this.csv.push({
+          geometry: {
+            coordinates: [parseFloat(parts[1]), parseFloat(parts[2])],
+          },
+          sample: parts[0],
+        });
+      });
+      this.csv.shift(); // Remove headers
+      this.sendDrawerState();
+      this.hasSentCSV = true; // prevent sending csv more than once
+      this.forceDrawerRender();
+    });
+  }
+
   getState() {
-    return {
+    const state = {
       minX: this.minX,
       maxX: this.maxX,
       minY: this.minY,
@@ -229,6 +268,10 @@ class Handler {
       count: this.count,
       dataset: this.dataset,
     };
+    if (!this.hasSentCSV) {
+      state.csv = this.csv;
+    }
+    return state;
   }
 
   forceDrawerRender() {

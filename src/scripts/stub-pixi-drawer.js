@@ -26,6 +26,8 @@ class StubPixiDrawer extends Drawer {
   removeTicker() {
     this.app.ticker.remove(this.animateSquares, this);
     this.app.ticker.remove(this.animateRandom, this);
+    this.app.ticker.remove(this.animateJittered, this);
+    this.app.ticker.remove(this.animateTSNE, this);
   }
 
   animateSquares() {
@@ -225,6 +227,62 @@ class StubPixiDrawer extends Drawer {
 
     this.needsAnimation = true;
     this.app.ticker.add(this.animateRandom, this);
+  }
+
+  animateTSNE() {
+    if (!this.needsAnimation) {
+      this.tick();
+      return;
+    }
+
+    const scaleX = scale(this.currentXRange, [0, this.width]);
+    const scaleY = scale(this.currentYRange, [0, this.height]);
+
+    for (const point of this.csv) {
+      let pointX = scaleX(point.geometry.coordinates[0]);
+      let pointY = scaleY(point.geometry.coordinates[1]);
+
+      point.element.position.set(pointX, pointY);
+    }
+
+    this.needsAnimation = false;
+    this.tick();
+  }
+
+  renderTSNE() {
+    const doRender = confirm(
+      "Warning: PIXI.js struggles to render this dataset and may cause this page to crash. Would you like to continue?"
+    );
+
+    if (!doRender) {
+      return;
+    }
+    this.removeTicker();
+    this.app.stage.removeChildren();
+    this.sampleColors = new Map( // Create colors for sample type
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ012"
+        .split("")
+        .map((letter) => [
+          letter,
+          [
+            Math.floor(Math.random() * 255),
+            Math.floor(Math.random() * 255),
+            Math.floor(Math.random() * 255),
+          ],
+        ])
+    );
+
+    for (const point of this.csv) {
+      const rect = new this.PIXI.Graphics();
+      rect.beginFill(rgbToHex(...this.sampleColors.get(point.sample)), 0.2);
+      rect.drawRect(0, 0, 20, 20);
+      rect.endFill();
+      point.element = rect;
+      this.app.stage.addChild(rect);
+    }
+
+    this.needsAnimation = true;
+    this.app.ticker.add(this.animateTSNE, this);
   }
 }
 

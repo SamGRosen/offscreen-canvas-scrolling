@@ -16,6 +16,9 @@ class Drawer {
     this.count = data.count;
     this.controls = data.controls;
     this.dataset = data.dataset;
+    if (data.csv) {
+      this.csv = data.csv;
+    }
 
     this.needsAnimation = true;
   }
