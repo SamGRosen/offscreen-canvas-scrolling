@@ -1146,6 +1146,18 @@ function () {
 
         _this2.sendDrawerState();
       });
+      var dataset = JSON.parse(localStorage.getItem("dataset"));
+      this.dataset = dataset || "squares";
+      localStorage.setItem("dataset", JSON.stringify(this.dataset));
+      document.getElementById("dataset").value = this.dataset;
+      document.querySelector("#dataset").addEventListener("change", function (event) {
+        _this2.dataset = event.target.value;
+        localStorage.setItem("dataset", JSON.stringify(_this2.dataset));
+
+        _this2.sendDrawerState();
+
+        _this2.forceDrawerRender();
+      });
     }
   }, {
     key: "initControls",
@@ -1259,7 +1271,8 @@ function () {
         controls: this.controls,
         currentXRange: this.currentXRange,
         currentYRange: this.currentYRange,
-        count: this.count
+        count: this.count,
+        dataset: this.dataset
       };
     }
   }, {
@@ -1419,7 +1432,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52187" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56906" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
