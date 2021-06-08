@@ -167,6 +167,8 @@ class WebGLCanvasDrawer extends Drawer {
       return;
     }
 
+    this.gl.disable(this.gl.BLEND);
+
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
