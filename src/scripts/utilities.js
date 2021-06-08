@@ -1,3 +1,6 @@
+import Supercluster from "supercluster";
+import regeneratorRuntime from "regenerator-runtime";
+
 function scale(domain, range) {
   const domainLength = domain[1] - domain[0];
   const rangeLength = range[1] - range[0];
@@ -73,4 +76,64 @@ const createMessanger = (clazz, self) => {
   };
 };
 
-export { scale, initShaderProgram, loadShader, rgbToHex, createMessanger };
+class SuperclusterMapper {
+  constructor(points, xRange, yRange, options = { radius: 1000, maxZoom: 16 }) {
+    this.xScale = scale(xRange, [-180, 180]);
+    this.yScale = scale(yRange, [-90, 90]);
+
+    this.xScaleInverse = scale([-180, 180], xRange);
+    this.yScaleInverse = scale([-90, 90], yRange);
+
+    this.index = new Supercluster(options);
+
+    for (const point of points) {
+      point.geometry.coordinates = [
+        this.xScale(point.geometry.coordinates[0]),
+        this.yScale(point.geometry.coordinates[1]),
+      ];
+    }
+
+    this.index.load(points);
+  }
+
+  *getClusters(bbox, zoomLevel = 10) {
+    const inLatLong = this.index.getClusters(
+      [
+        this.xScale(bbox[0]),
+        this.yScale(bbox[1]),
+        this.xScale(bbox[2]),
+        this.yScale(bbox[3]),
+      ],
+      zoomLevel
+    );
+    for (const point of inLatLong) {
+      // use of generator here gives huge speedup since no heap changes needed
+      yield {
+        ...point,
+        geometry: {
+          coordinates: [
+            this.xScaleInverse(point.geometry.coordinates[0]),
+            this.yScaleInverse(point.geometry.coordinates[1]),
+          ],
+        },
+      };
+    }
+  }
+}
+
+const getRandomColor = () => {
+  let r = Math.floor(Math.random() * 255);
+  let g = Math.floor(Math.random() * 255);
+  let b = Math.floor(Math.random() * 255);
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+export {
+  scale,
+  initShaderProgram,
+  loadShader,
+  rgbToHex,
+  createMessanger,
+  SuperclusterMapper,
+  getRandomColor,
+};

@@ -18,7 +18,12 @@ class StubPixiDrawer extends Drawer {
     });
   }
 
-  animate() {
+  removeTicker() {
+    this.app.ticker.remove(this.animateSquares, this);
+    this.app.ticker.remove(this.animateRandom, this);
+  }
+
+  animateSquares() {
     if (!this.needsAnimation) {
       this.tick();
       return;
@@ -57,13 +62,13 @@ class StubPixiDrawer extends Drawer {
     this.tick();
   }
 
-  render() {
+  renderSquares() {
     this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
     this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
     this.scaleBlue = scale([this.minX, this.maxX], [0, 256]);
     this.scaleRed = scale([this.minY, this.maxY], [0, 256]);
 
-    this.app.ticker.remove(this.animate, this);
+    this.removeTicker();
     this.app.stage.removeChildren();
 
     this.columns = [];
@@ -92,7 +97,58 @@ class StubPixiDrawer extends Drawer {
       }
     }
     this.needsAnimation = true;
-    this.app.ticker.add(this.animate, this);
+    this.app.ticker.add(this.animateSquares, this);
+  }
+
+  animateRandom() {
+    if (!this.needsAnimation) {
+      this.tick();
+      return;
+    }
+
+    const scaleX = scale(this.currentXRange, [0, this.width]);
+    const scaleY = scale(this.currentYRange, [0, this.height]);
+
+    for (const point of this.points) {
+      let pointX = scaleX(point.x);
+      let pointY = scaleY(point.y);
+      point.element.visible = pointX + 10 > 0 && pointY + 10 > 0;
+
+      if (point.element.visible) {
+        point.element.position.set(pointX, pointY);
+      }
+    }
+
+    this.needsAnimation = false;
+    this.tick();
+  }
+
+  renderRandom() {
+    this.removeTicker();
+    this.app.stage.removeChildren();
+
+    this.points = [];
+    for (let i = 0; i < this.count.value; i++) {
+      const rect = new this.PIXI.Graphics();
+      rect.beginFill(
+        rgbToHex(
+          Math.floor(Math.random() * 255),
+          Math.floor(Math.random() * 255),
+          Math.floor(Math.random() * 255)
+        )
+      );
+      rect.drawRect(0, 0, 10, 10);
+      rect.endFill();
+      this.points.push({
+        x: this.minX + Math.random() * (this.maxX - this.minX),
+        y: this.minY + Math.random() * (this.maxY - this.minY),
+        element: rect,
+      });
+      this.app.stage.addChild(rect);
+    }
+
+    this.needsAnimation = true;
+    this.app.ticker.add(this.animateRandom, this);
   }
 }
 

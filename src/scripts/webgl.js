@@ -6,7 +6,7 @@ const vertexShader = `
   }
 `;
 
-const fragmentShader = `
+const squaresFragmentShader = `
   precision mediump float;
   uniform float uGridSize;
   uniform vec4 viewport;
@@ -19,4 +19,30 @@ const fragmentShader = `
   }
 `;
 
-export { vertexShader, fragmentShader };
+const colorPointsVertexShader = `
+  attribute vec4 aVertexPosition;
+  attribute vec4 aVertexColor;
+
+  varying lowp vec4 vColor;
+
+  void main(void) {
+    gl_Position = aVertexPosition;
+    vColor = aVertexColor;
+    gl_PointSize = 10.0;
+  }
+`;
+
+const colorPointsFragmentShader = `
+  varying lowp vec4 vColor;
+
+  void main(void) {
+    gl_FragColor = vColor;
+  }
+`;
+
+export {
+  vertexShader,
+  squaresFragmentShader,
+  colorPointsVertexShader,
+  colorPointsFragmentShader,
+};

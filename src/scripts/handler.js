@@ -95,6 +95,17 @@ class Handler {
       localStorage.setItem("controls", JSON.stringify(this.controls));
       this.sendDrawerState();
     });
+
+    const dataset = JSON.parse(localStorage.getItem("dataset"));
+    this.dataset = dataset || "squares";
+    localStorage.setItem("dataset", JSON.stringify(this.dataset));
+    document.getElementById("dataset").value = this.dataset;
+    document.querySelector("#dataset").addEventListener("change", (event) => {
+      this.dataset = event.target.value;
+      localStorage.setItem("dataset", JSON.stringify(this.dataset));
+      this.sendDrawerState();
+      this.forceDrawerRender();
+    });
   }
 
   initControls() {
@@ -216,6 +227,7 @@ class Handler {
       currentXRange: this.currentXRange,
       currentYRange: this.currentYRange,
       count: this.count,
+      dataset: this.dataset,
     };
   }
 

@@ -15,6 +15,7 @@ class Drawer {
     this.currentYRange = [...data.currentYRange];
     this.count = data.count;
     this.controls = data.controls;
+    this.dataset = data.dataset;
 
     this.needsAnimation = true;
   }
@@ -23,7 +24,31 @@ class Drawer {
 
   animate() {}
 
-  render() {}
+  render() {
+    if (this.lastFrame) {
+      // Avoid overlapping animation requests
+      cancelAnimationFrame(this.lastFrame);
+    }
+
+    switch (this.dataset) {
+      case "squares":
+        this.renderSquares();
+        break;
+      case "random":
+        this.renderRandom();
+        break;
+      case "jittered":
+        this.renderJittered();
+        break;
+      case "tsne":
+        this.renderTSNE();
+        break;
+      default:
+        console.error(
+          `Did not receive valid dataset to render: ${this.dataset}`
+        );
+    }
+  }
 }
 
 export default Drawer;

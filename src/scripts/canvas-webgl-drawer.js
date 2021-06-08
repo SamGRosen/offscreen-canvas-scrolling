@@ -1,6 +1,11 @@
 import Drawer from "./drawer";
 import { scale, initShaderProgram } from "./utilities";
-import { vertexShader, fragmentShader } from "./webgl.js";
+import {
+  vertexShader,
+  squaresFragmentShader,
+  colorPointsVertexShader,
+  colorPointsFragmentShader,
+} from "./webgl.js";
 
 // Largely taken from
 // https://github.com/mdn/webgl-examples/blob/gh-pages/tutorial/sample2/webgl-demo.js
@@ -17,9 +22,9 @@ class WebGLCanvasDrawer extends Drawer {
     }
   }
 
-  animate() {
+  animateSquares() {
     if (!this.needsAnimation) {
-      this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+      this.lastFrame = requestAnimationFrame(this.animateSquares.bind(this));
       this.tick();
       return;
     }
@@ -43,18 +48,18 @@ class WebGLCanvasDrawer extends Drawer {
     );
 
     this.needsAnimation = false;
-    this.lastFrame = requestAnimationFrame(this.animate.bind(this));
+    this.lastFrame = requestAnimationFrame(this.animateSquares.bind(this));
     this.tick();
   }
 
-  render() {
+  renderSquares() {
     this.trueBoxWidth = (this.maxX - this.minX) / Math.sqrt(this.count.value);
     this.trueBoxHeight = (this.maxY - this.minY) / Math.sqrt(this.count.value);
 
     this.shaderProgram = initShaderProgram(
       this.gl,
       vertexShader,
-      fragmentShader
+      squaresFragmentShader
     );
 
     this.programInfo = {
@@ -126,11 +131,8 @@ class WebGLCanvasDrawer extends Drawer {
       Math.sqrt(this.count.value) / 2
     );
 
-    if (this.lastFrame) {
-      cancelAnimationFrame(this.lastFrame);
-    }
     this.needsAnimation = true;
-    this.animate();
+    this.animateSquares();
   }
 
   getWebGLViewport() {
@@ -156,6 +158,112 @@ class WebGLCanvasDrawer extends Drawer {
     const toReturnY = scaleYWindowSpace(this.currentYRange[0]);
 
     return [toReturnX, toReturnY, displayAsIfThisWide, displayAsIfThisHigh];
+  }
+
+  animateRandom() {
+    if (!this.needsAnimation) {
+      this.lastFrame = requestAnimationFrame(this.animateRandom.bind(this));
+      this.tick();
+      return;
+    }
+
+    this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+    const viewport = this.getWebGLViewport();
+
+    this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+
+    this.gl.drawArrays(
+      this.gl.POINTS,
+      0, // stride
+      this.count.value // vertex count
+    );
+
+    this.needsAnimation = false;
+    this.lastFrame = requestAnimationFrame(this.animateRandom.bind(this));
+    this.tick();
+  }
+
+  renderRandom() {
+    this.shaderProgram = initShaderProgram(
+      this.gl,
+      colorPointsVertexShader,
+      colorPointsFragmentShader
+    );
+
+    this.programInfo = {
+      program: this.shaderProgram,
+      attribLocations: {
+        vertexPosition: this.gl.getAttribLocation(
+          this.shaderProgram,
+          "aVertexPosition"
+        ),
+        vertexColor: this.gl.getAttribLocation(
+          this.shaderProgram,
+          "aVertexColor"
+        ),
+      },
+    };
+
+    const positions = [];
+    for (let i = 0; i < this.count.value; i++) {
+      positions.push(-1 + 2 * Math.random(), -1 + 2 * Math.random());
+    }
+
+    this.positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(positions),
+      this.gl.STATIC_DRAW
+    );
+
+    const colors = [];
+    for (let i = 0; i < this.count.value; i++) {
+      colors.push(Math.random(), Math.random(), Math.random(), 1.0);
+    }
+    this.colorBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.bufferData(
+      this.gl.ARRAY_BUFFER,
+      new Float32Array(colors),
+      this.gl.STATIC_DRAW
+    );
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.vertexAttribPointer(
+      this.programInfo.attribLocations.vertexPosition,
+      2, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+    );
+    this.gl.enableVertexAttribArray(
+      this.programInfo.attribLocations.vertexPosition
+    );
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.vertexAttribPointer(
+      this.programInfo.attribLocations.vertexColor,
+      4, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+    );
+    this.gl.enableVertexAttribArray(
+      this.programInfo.attribLocations.vertexColor
+    );
+
+    this.gl.useProgram(this.programInfo.program);
+
+    if (this.lastFrame) {
+      cancelAnimationFrame(this.lastFrame);
+    }
+    this.needsAnimation = true;
+    this.animateRandom();
   }
 }
 
