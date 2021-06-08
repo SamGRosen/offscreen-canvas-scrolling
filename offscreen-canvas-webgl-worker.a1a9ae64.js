@@ -167,6 +167,11 @@ function () {
       this.count = data.count;
       this.controls = data.controls;
       this.dataset = data.dataset;
+
+      if (data.csv) {
+        this.csv = data.csv;
+      }
+
       this.needsAnimation = true;
     }
   }, {
@@ -871,7 +876,7 @@ function getY(p) {
   return p.y;
 }
 },{"kdbush":"../../node_modules/kdbush/src/index.js"}],"../../node_modules/regenerator-runtime/runtime.js":[function(require,module,exports) {
-var global = arguments[3];
+var define;
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
  *
@@ -879,7 +884,7 @@ var global = arguments[3];
  * LICENSE file in the root directory of this source tree.
  */
 
-!(function(global) {
+var runtime = (function (exports) {
   "use strict";
 
   var Op = Object.prototype;
@@ -890,22 +895,23 @@ var global = arguments[3];
   var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
   var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
 
-  var inModule = typeof module === "object";
-  var runtime = global.regeneratorRuntime;
-  if (runtime) {
-    if (inModule) {
-      // If regeneratorRuntime is defined globally and we're in a module,
-      // make the exports object identical to regeneratorRuntime.
-      module.exports = runtime;
-    }
-    // Don't bother evaluating the rest of this file if the runtime was
-    // already defined globally.
-    return;
+  function define(obj, key, value) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+    return obj[key];
   }
-
-  // Define the runtime globally (as expected by generated code) as either
-  // module.exports (if we're in a module) or a new, empty object.
-  runtime = global.regeneratorRuntime = inModule ? module.exports : {};
+  try {
+    // IE 8 has a broken Object.defineProperty that only works on DOM objects.
+    define({}, "");
+  } catch (err) {
+    define = function(obj, key, value) {
+      return obj[key] = value;
+    };
+  }
 
   function wrap(innerFn, outerFn, self, tryLocsList) {
     // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
@@ -919,7 +925,7 @@ var global = arguments[3];
 
     return generator;
   }
-  runtime.wrap = wrap;
+  exports.wrap = wrap;
 
   // Try/catch helper to minimize deoptimizations. Returns a completion
   // record like context.tryEntries[i].completion. This interface could
@@ -977,20 +983,23 @@ var global = arguments[3];
     Generator.prototype = Object.create(IteratorPrototype);
   GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
   GeneratorFunctionPrototype.constructor = GeneratorFunction;
-  GeneratorFunctionPrototype[toStringTagSymbol] =
-    GeneratorFunction.displayName = "GeneratorFunction";
+  GeneratorFunction.displayName = define(
+    GeneratorFunctionPrototype,
+    toStringTagSymbol,
+    "GeneratorFunction"
+  );
 
   // Helper for defining the .next, .throw, and .return methods of the
   // Iterator interface in terms of a single ._invoke method.
   function defineIteratorMethods(prototype) {
     ["next", "throw", "return"].forEach(function(method) {
-      prototype[method] = function(arg) {
+      define(prototype, method, function(arg) {
         return this._invoke(method, arg);
-      };
+      });
     });
   }
 
-  runtime.isGeneratorFunction = function(genFun) {
+  exports.isGeneratorFunction = function(genFun) {
     var ctor = typeof genFun === "function" && genFun.constructor;
     return ctor
       ? ctor === GeneratorFunction ||
@@ -1000,14 +1009,12 @@ var global = arguments[3];
       : false;
   };
 
-  runtime.mark = function(genFun) {
+  exports.mark = function(genFun) {
     if (Object.setPrototypeOf) {
       Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
     } else {
       genFun.__proto__ = GeneratorFunctionPrototype;
-      if (!(toStringTagSymbol in genFun)) {
-        genFun[toStringTagSymbol] = "GeneratorFunction";
-      }
+      define(genFun, toStringTagSymbol, "GeneratorFunction");
     }
     genFun.prototype = Object.create(Gp);
     return genFun;
@@ -1017,11 +1024,11 @@ var global = arguments[3];
   // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
   // `hasOwn.call(value, "__await")` to determine if the yielded value is
   // meant to be awaited.
-  runtime.awrap = function(arg) {
+  exports.awrap = function(arg) {
     return { __await: arg };
   };
 
-  function AsyncIterator(generator) {
+  function AsyncIterator(generator, PromiseImpl) {
     function invoke(method, arg, resolve, reject) {
       var record = tryCatch(generator[method], generator, arg);
       if (record.type === "throw") {
@@ -1032,14 +1039,14 @@ var global = arguments[3];
         if (value &&
             typeof value === "object" &&
             hasOwn.call(value, "__await")) {
-          return Promise.resolve(value.__await).then(function(value) {
+          return PromiseImpl.resolve(value.__await).then(function(value) {
             invoke("next", value, resolve, reject);
           }, function(err) {
             invoke("throw", err, resolve, reject);
           });
         }
 
-        return Promise.resolve(value).then(function(unwrapped) {
+        return PromiseImpl.resolve(value).then(function(unwrapped) {
           // When a yielded Promise is resolved, its final value becomes
           // the .value of the Promise<{value,done}> result for the
           // current iteration.
@@ -1057,7 +1064,7 @@ var global = arguments[3];
 
     function enqueue(method, arg) {
       function callInvokeWithMethodAndArg() {
-        return new Promise(function(resolve, reject) {
+        return new PromiseImpl(function(resolve, reject) {
           invoke(method, arg, resolve, reject);
         });
       }
@@ -1092,17 +1099,20 @@ var global = arguments[3];
   AsyncIterator.prototype[asyncIteratorSymbol] = function () {
     return this;
   };
-  runtime.AsyncIterator = AsyncIterator;
+  exports.AsyncIterator = AsyncIterator;
 
   // Note that simple async functions are implemented on top of
   // AsyncIterator objects; they just return a Promise for the value of
   // the final result produced by the iterator.
-  runtime.async = function(innerFn, outerFn, self, tryLocsList) {
+  exports.async = function(innerFn, outerFn, self, tryLocsList, PromiseImpl) {
+    if (PromiseImpl === void 0) PromiseImpl = Promise;
+
     var iter = new AsyncIterator(
-      wrap(innerFn, outerFn, self, tryLocsList)
+      wrap(innerFn, outerFn, self, tryLocsList),
+      PromiseImpl
     );
 
-    return runtime.isGeneratorFunction(outerFn)
+    return exports.isGeneratorFunction(outerFn)
       ? iter // If outerFn is a generator, return the full iterator.
       : iter.next().then(function(result) {
           return result.done ? result.value : iter.next();
@@ -1199,7 +1209,8 @@ var global = arguments[3];
       context.delegate = null;
 
       if (context.method === "throw") {
-        if (delegate.iterator.return) {
+        // Note: ["return"] must be used for ES3 parsing compatibility.
+        if (delegate.iterator["return"]) {
           // If the delegate iterator has a return method, give it a
           // chance to clean up.
           context.method = "return";
@@ -1273,7 +1284,7 @@ var global = arguments[3];
   // unified ._invoke helper method.
   defineIteratorMethods(Gp);
 
-  Gp[toStringTagSymbol] = "Generator";
+  define(Gp, toStringTagSymbol, "Generator");
 
   // A Generator should always return itself as the iterator object when the
   // @@iterator function is called on it. Some browsers' implementations of the
@@ -1319,7 +1330,7 @@ var global = arguments[3];
     this.reset(true);
   }
 
-  runtime.keys = function(object) {
+  exports.keys = function(object) {
     var keys = [];
     for (var key in object) {
       keys.push(key);
@@ -1380,7 +1391,7 @@ var global = arguments[3];
     // Return an iterator with no values.
     return { next: doneResult };
   }
-  runtime.values = values;
+  exports.values = values;
 
   function doneResult() {
     return { value: undefined, done: true };
@@ -1585,55 +1596,37 @@ var global = arguments[3];
       return ContinueSentinel;
     }
   };
-})(
-  // In sloppy mode, unbound `this` refers to the global object, fallback to
-  // Function constructor if we're in global strict mode. That is sadly a form
-  // of indirect eval which violates Content Security Policy.
-  (function() {
-    return this || (typeof self === "object" && self);
-  })() || Function("return this")()
-);
 
-},{}],"../../node_modules/regenerator-runtime/runtime-module.js":[function(require,module,exports) {
-/**
- * Copyright (c) 2014-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
+  // Regardless of whether this script is executing as a CommonJS module
+  // or not, return the runtime object so that we can declare the variable
+  // regeneratorRuntime in the outer scope, which allows this module to be
+  // injected easily by `bin/regenerator --include-runtime script.js`.
+  return exports;
 
-// This method of obtaining a reference to the global object needs to be
-// kept identical to the way it is obtained in runtime.js
-var g = (function() {
-  return this || (typeof self === "object" && self);
-})() || Function("return this")();
+}(
+  // If this script is executing as a CommonJS module, use module.exports
+  // as the regeneratorRuntime namespace. Otherwise create a new empty
+  // object. Either way, the resulting object will be used to initialize
+  // the regeneratorRuntime variable at the top of this file.
+  typeof module === "object" ? module.exports : {}
+));
 
-// Use `getOwnPropertyNames` because not all browsers support calling
-// `hasOwnProperty` on the global `self` object in a worker. See #183.
-var hadRuntime = g.regeneratorRuntime &&
-  Object.getOwnPropertyNames(g).indexOf("regeneratorRuntime") >= 0;
-
-// Save the old regeneratorRuntime in case it needs to be restored later.
-var oldRuntime = hadRuntime && g.regeneratorRuntime;
-
-// Force reevalutation of runtime.js.
-g.regeneratorRuntime = undefined;
-
-module.exports = require("./runtime");
-
-if (hadRuntime) {
-  // Restore the original runtime.
-  g.regeneratorRuntime = oldRuntime;
-} else {
-  // Remove the global property added by runtime.js.
-  try {
-    delete g.regeneratorRuntime;
-  } catch(e) {
-    g.regeneratorRuntime = undefined;
-  }
+try {
+  regeneratorRuntime = runtime;
+} catch (accidentalStrictMode) {
+  // This module should not be running in strict mode, so the above
+  // assignment should always work unless something is misconfigured. Just
+  // in case runtime.js accidentally runs in strict mode, we can escape
+  // strict mode using a global Function call. This could conceivably fail
+  // if a Content Security Policy forbids using Function, but in that case
+  // the proper solution is to fix the accidental strict mode problem. If
+  // you've misconfigured your bundler to force strict mode and applied a
+  // CSP to forbid Function, and you're not willing to fix either of those
+  // problems, please detail your unique predicament in a GitHub issue.
+  Function("r", "regeneratorRuntime = r")(runtime);
 }
 
-},{"./runtime":"../../node_modules/regenerator-runtime/runtime.js"}],"../scripts/utilities.js":[function(require,module,exports) {
+},{}],"../scripts/utilities.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1859,7 +1852,7 @@ var getRandomColor = function getRandomColor() {
 };
 
 exports.getRandomColor = getRandomColor;
-},{"supercluster":"../../node_modules/supercluster/index.js","regenerator-runtime":"../../node_modules/regenerator-runtime/runtime-module.js"}],"../scripts/webgl.js":[function(require,module,exports) {
+},{"supercluster":"../../node_modules/supercluster/index.js","regenerator-runtime":"../../node_modules/regenerator-runtime/runtime.js"}],"../scripts/webgl.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1870,7 +1863,7 @@ var vertexShader = "\n  attribute vec4 aVertexPosition;\n\n  void main() {\n    
 exports.vertexShader = vertexShader;
 var squaresFragmentShader = "\n  precision mediump float;\n  uniform float uGridSize;\n  uniform vec4 viewport;\n  void main() {\n    vec4 ndcPos;\n    // Reverse calculations from window space to clip space (normalized device coordinates)\n    ndcPos.xy = ((2.0 * gl_FragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;\n    ndcPos.xy = ndcPos.xy - mod(ndcPos.xy, 1.0 / uGridSize);\n    gl_FragColor = vec4(ndcPos.x/2.0 + 0.5 , 0, ndcPos.y/2.0 + 0.5, 1.0);\n  }\n";
 exports.squaresFragmentShader = squaresFragmentShader;
-var colorPointsVertexShader = "\n  attribute vec4 aVertexPosition;\n  attribute vec4 aVertexColor;\n\n  varying lowp vec4 vColor;\n\n  void main(void) {\n    gl_Position = aVertexPosition;\n    vColor = aVertexColor;\n    gl_PointSize = 10.0;\n  }\n";
+var colorPointsVertexShader = "\n  attribute vec4 aVertexPosition;\n  attribute vec4 aVertexColor;\n\n  varying lowp vec4 vColor;\n\n  void main(void) {\n    gl_Position = aVertexPosition;\n    vColor = aVertexColor;\n    gl_PointSize = 1.0;\n  }\n";
 exports.colorPointsVertexShader = colorPointsVertexShader;
 var colorPointsFragmentShader = "\n  varying lowp vec4 vColor;\n\n  void main(void) {\n    gl_FragColor = vColor;\n  }\n";
 exports.colorPointsFragmentShader = colorPointsFragmentShader;
@@ -1891,6 +1884,20 @@ var _webgl = require("./webgl.js");
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2185,6 +2192,97 @@ function (_Drawer) {
       this.needsAnimation = true;
       this.animateRandom();
     }
+  }, {
+    key: "animateTSNE",
+    value: function animateTSNE() {
+      if (!this.needsAnimation) {
+        this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+        this.tick();
+        return;
+      }
+
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.SRC_COLOR, this.gl.DST_COLOR); // Clear the canvas before we start drawing on it.
+
+      this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      var viewport = this.getWebGLViewport();
+      this.gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+      this.gl.drawArrays(this.gl.POINTS, 0, // stride
+      this.vertexCount // vertex count
+      );
+      this.needsAnimation = false;
+      this.lastFrame = requestAnimationFrame(this.animateTSNE.bind(this));
+      this.tick();
+    }
+  }, {
+    key: "renderTSNE",
+    value: function renderTSNE() {
+      this.sampleColors = new Map( // Create colors for sample type
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ012".split("").map(function (letter) {
+        return [letter, [Math.random(), Math.random(), Math.random(), 0.01]];
+      }));
+      this.xTSNEScale = (0, _utilities.scale)([-10, 10], [-1, 1]);
+      this.yTSNEScale = (0, _utilities.scale)([-10, 10], [-1, 1]);
+      this.shaderProgram = (0, _utilities.initShaderProgram)(this.gl, _webgl.colorPointsVertexShader, _webgl.colorPointsFragmentShader);
+      this.programInfo = {
+        program: this.shaderProgram,
+        attribLocations: {
+          vertexPosition: this.gl.getAttribLocation(this.shaderProgram, "aVertexPosition"),
+          vertexColor: this.gl.getAttribLocation(this.shaderProgram, "aVertexColor")
+        }
+      };
+      var positions = [];
+      var colors = [];
+      var i = 0;
+
+      var _iterator = _createForOfIteratorHelper(this.csv),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var point = _step.value;
+          positions.push(this.xTSNEScale(point.geometry.coordinates[0]), this.yTSNEScale(point.geometry.coordinates[1]));
+          colors.push.apply(colors, _toConsumableArray(this.sampleColors.get(point.sample)));
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+
+      this.vertexCount = positions.length / 2;
+      this.positionBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
+      this.colorBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+      this.gl.vertexAttribPointer(this.programInfo.attribLocations.vertexPosition, 2, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+      );
+      this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexPosition);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+      this.gl.vertexAttribPointer(this.programInfo.attribLocations.vertexColor, 4, // numComponents
+      this.gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0 // offset
+      );
+      this.gl.enableVertexAttribArray(this.programInfo.attribLocations.vertexColor);
+      this.gl.useProgram(this.programInfo.program);
+
+      if (this.lastFrame) {
+        cancelAnimationFrame(this.lastFrame);
+      }
+
+      this.needsAnimation = true;
+      this.animateTSNE();
+    }
   }]);
 
   return WebGLCanvasDrawer;
@@ -2277,7 +2375,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50959" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59686" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
